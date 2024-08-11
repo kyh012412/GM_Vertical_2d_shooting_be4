@@ -117,6 +117,9 @@ public class Player : MonoBehaviour
                     isTouchLeft=true;
                     break;
             }
+        }else if(other.gameObject.CompareTag("EnemyBullet") || other.gameObject.CompareTag("Enemy")){
+            gameObject.SetActive(false);
+            GameManager.instance.RespawnPlayer();
         }
     }
 

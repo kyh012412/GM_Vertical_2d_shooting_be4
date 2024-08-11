@@ -424,4 +424,141 @@ void Fire(){
 1. GameManager내에 변수를 inspector에서 초기화
 1. 테스트
 
+### 2D 종스크롤 슈팅 - 적 전투와 피격 이벤트 만들기 [B30]
+
+#### 적 생성추가
+
+1. 12시방향이아닌 3시 9시에도 적 spawnpoint 추가
+
+   ```cs
+   void SpawnEnemy(){
+   	int ranEnemy = Random.Range(0,enemyObjs.Length);
+   	int ranPoint = Random.Range(0,spawnPoints.Length);
+
+   	GameObject enemy = Instantiate(enemyObjs[ranEnemy],spawnPoints[ranPoint].position,spawnPoints[ranPoint].rotation);
+   	Rigidbody2D rigid = enemy.GetComponent<Rigidbody2D>();
+
+   	Enemy enemyLogic = enemy.GetComponent<Enemy>();
+
+   	if(ranPoint == 5 || ranPoint == 6){
+   		rigid.velocity = Vector2.left * enemyLogic.speed + Vector2.down;
+   		enemy.transform.Rotate(Vector3.back*90);
+   	}else if(ranPoint == 7 || ranPoint == 8){
+   		rigid.velocity = Vector2.right * enemyLogic.speed + Vector2.down;
+   		enemy.transform.Rotate(Vector3.forward*90);
+   	}else{
+   		rigid.velocity = Vector2.down * enemyLogic.speed;
+   	}
+   }
+   ```
+
+1. inspector 상에 연결
+1. 테스트
+
+#### 적 공격
+
+1. Player Bullet B를 복사 (Enemy Bullet A)
+   1. 수정시 Rename File 선택
+   2. Sprite 는 Enemy Bullet 1로 변경
+   3. collider size 0.2 , 0.25
+   4. auto save가 켜져있는지 확인
+2. Enemy Bullet A 복사 (Enemy Bullet B)
+   1. Sprite Enemy Bullet 3으로 변경
+   2. Collider는 Circle collider 2d로 변경
+      1. is trigger 체크
+3. EnemyBullet태그를 만들어주고 적용한다.
+4. Enemy.cs
+
+   ```cs
+   public Sprite[] sprites;
+   public float maxShotDelay;
+   public float curShotDelay;
+
+   public GameObject bulletObjA;
+   public GameObject bulletObjB;
+   public GameObject player;
+
+   void Update()
+   {
+   	Fire();
+   	Reload();
+   }
+
+   void Fire(){
+   	if(curShotDelay < maxShotDelay) return;
+
+   	if(enemyName == "A"){
+   		GameObject bullet = Instantiate(bulletObjA,transform.position,transform.rotation);
+   		Rigidbody2D rigid = bullet.GetComponent<Rigidbody2D>();
+
+   		Vector3 dirVec = player.transform.position - transform.position;
+   		rigid.AddForce(dirVec.normalized * 10f,ForceMode2D.Impulse);
+   	}else if(enemyName == "C"){
+   		GameObject bulletR = Instantiate(bulletObjA,transform.position + Vector3.right * 0.3f,transform.rotation);
+   		GameObject bulletL = Instantiate(bulletObjA,transform.position + Vector3.left * 0.3f,transform.rotation);
+
+   		Rigidbody2D rigidR = bulletR.GetComponent<Rigidbody2D>();
+   		Rigidbody2D rigidL = bulletL.GetComponent<Rigidbody2D>();
+
+   		Vector3 dirVecR = player.transform.position - transform.position;
+   		Vector3 dirVecL = player.transform.position - transform.position;
+
+   		rigidR.AddForce(dirVecR.normalized * 10f,ForceMode2D.Impulse);
+   		rigidL.AddForce(dirVecL.normalized * 10f,ForceMode2D.Impulse);
+   	}
+
+   	curShotDelay -= maxShotDelay;
+   }
+
+   void Reload(){
+   	curShotDelay += Time.deltaTime;
+   }
+   ```
+
+5. GameManager에 player 등록
+6. Enemy프리펩 내에
+   1. Bullect 프리펩 등록
+   2. enemyName 등록
+   3. maxShotDelay에 수치 값주기
+
+#### 피격 이벤트
+
+1. Player.cs
+   ```cs
+   void OnTriggerEnter2D(Collider2D other)
+   {
+   	if(other.gameObject.CompareTag("Border")){
+   		switch(other.gameObject.name){
+   			case "Top":
+   				isTouchTop=true;
+   				break;
+   			case "Bottom":
+   				isTouchBottom=true;
+   				break;
+   			case "Right":
+   				isTouchRight=true;
+   				break;
+   			case "Left":
+   				isTouchLeft=true;
+   				break;
+   		}
+   	}else if(other.gameObject.CompareTag("EnemyBullet") || other.gameObject.CompareTag("Enemy")){
+   		gameObject.SetActive(false);
+   		GameManager.instance.RespawnPlayer();
+   	}
+   }
+   ```
+2. GameManger.cs
+
+   ```cs
+   public void RespawnPlayer(){
+   	Invoke("RespawnPlayerExe",2f);
+   }
+
+   void RespawnPlayerExe(){
+   	player.transform.position = Vector3.down * 3.5f;
+   	player.SetActive(true);
+   }
+   ```
+
 ###
