@@ -311,4 +311,117 @@ void Fire(){
 
 1. 테스트 / 정상
 
+### 2D 종스크롤 슈팅 - 적 비행기 만들기 [B29]
+
+#### 준비하기
+
+1. Enemy A,B,C를 하이라키 상에 드래그
+2. Enemy B에는 Polygon collider 2d를 사용
+   1. polygon수를 최적화하여 부하를 줄이기
+3. sprites 아틀라스로가서 sprite editor탭을열어서
+   1. 좌상단에 sprite editor를 눌러보면다른 값들이 잇는데
+   2. *Custom Physics Shape*를 선택
+   3. 원하는 sprite 한장 선택후 generate 버튼을 누르면 모양이 나온다.
+   4. polygon을 처음 생성할때이모양을 따라간다.
+   5. 모양 조정후 상단의 apply 선택
+4. Enemy A
+   1. circle collider 2d
+5. Enemy A,B,C에
+   1. rigidbody 2d 컴포넌트추가
+   2. Enemy Tag 달아주기
+   3. is trigger 체크
+
+#### 적 기체 프리펩
+
+1. Enemy.cs 추가
+
+   ```cs
+   public class Enemy : MonoBehaviour
+   {
+       public float speed;
+       public int health;
+       public Sprite[] sprites;
+
+       SpriteRenderer spriteRenderer;
+       Rigidbody2D rigid;
+
+       void Awake()
+       {
+           spriteRenderer = GetComponent<SpriteRenderer>();
+           rigid = GetComponent<Rigidbody2D>();
+           rigid.velocity = Vector2.down * speed;
+       }
+
+       void OnHit(int dmg){
+           health -= dmg;
+           spriteRenderer.sprite = sprites[1];
+           Invoke("ReturnSprite",0.1f);
+
+           if(health<=0){
+               Debug.Log("dead action");
+               Destroy(gameObject);
+               CancelInvoke("ReturnSprite");
+           }
+       }
+
+       void ReturnSprite(){
+           spriteRenderer.sprite = sprites[0];
+       }
+
+       void OnTriggerEnter2D(Collider2D other)
+       {
+           switch(other.gameObject.tag){
+               case "BorderBullet":
+                   Destroy(gameObject);
+                   break;
+               case "PlayerBullet":
+                   Bullet bullet = other.gameObject.GetComponent<Bullet>();
+                   OnHit(bullet.dmg);
+
+                   Destroy(other.gameObject);
+                   break;
+           }
+       }
+   }
+   ```
+
+1. 객체별로
+   1. sprites를 넣어주며 1번 인덱스에 hit sprite를 넣어준다.
+   2. 각자 speed와 health를 지정해준다.
+1. 지난번에 만들어둔 prefab bullet의 태그를 PlayerBullet으로 만들어주기
+1. 테스트 후 prefab화
+
+#### 적 기체 생성
+
+1. GameManager 객체와 cs 생성
+
+   ```cs
+   public class GameManager : MonoBehaviour
+   {
+       public GameObject[] enemyObjs;
+       public Transform[] spawnPoints;
+       public float maxSpawnDelay;
+       public float curSpawnDelay;
+       void Update()
+       {
+           curSpawnDelay+=Time.deltaTime;
+
+           if(curSpawnDelay > maxSpawnDelay){
+               SpawnEnemy();
+               maxSpawnDelay = Random.Range(0.5f,3f);
+               curSpawnDelay -= maxSpawnDelay;
+           }
+       }
+
+       void SpawnEnemy(){
+           int ranEnemy = Random.Range(0,enemyObjs.Length);
+           int ranPoint = Random.Range(0,spawnPoints.Length);
+           Instantiate(enemyObjs[ranEnemy],spawnPoints[ranPoint].position,spawnPoints[ranPoint].rotation);
+       }
+   }
+   ```
+
+1. GameManager내에 변수를 inspector에서 초기화
+1. 테스트
+
 ###
