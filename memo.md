@@ -169,4 +169,146 @@ be4
 
 8. Background grid를 하이라키에 넣어준다.
 
+### 2D 종스크롤 슈팅 - 총알발사 구현하기 [B28]
+
+https://www.youtube.com/watch?v=JUG0GnsJHQw&list=PLO-mt5Iu5TeYI4dbYwWP8JqZMC9iuUIW2&index=32
+
+#### 준비하기(프리펩)
+
+1. Player Bullet 0을 하이라키에 드랍(Player Bullet A)
+   1. 위치 초기화
+   2. box collider 2d와 rigidbody 2d 추가
+      1. Bullet은 추후 addforce로 날릴것이기에 Body Type은 Dynamic을 써야한다.
+      2. is trigger 체크
+2. Assets/Prefabs 폴더를 만들어 준다.
+   1. 프리펩 : 재활용을 위해 에셋으로 저장된 게임 오브젝트
+3. Prefabs 폴더내로 Player Bullet A를 끌어놔준다.
+4. Player Bullet A를 복사 (Player Bullet B)
+   1. Scale x 1.5, y 1.5
+   2. collider size 0.3, 0.4
+   3. sprite renderer내에 sprite를 Player Bullet 1로 변경
+   4. Prefabs 폴더내로 드래그
+      1. original prefab을 눌러서 새로운 prefab으로 만들어준다.
+5. Prefab을 잘 만들었다면 하이라키상에서 Bullet 제거
+
+#### 발사체 제거(오브젝트 삭제)
+
+1. Bullet.cs생성
+   ```cs
+   public class Bullet : MonoBehaviour
+   {
+       void OnTriggerEnter2D(Collider2D other)
+       {
+           if(other.gameObject.CompareTag("BorderBullet")){
+               Destroy(gameObject);
+           }
+       }
+   }
+   ```
+1. 하이라키내에 border를 복사하여준다. (borderBullect)
+   1. border보다 길이를 2씩증가시킨정도?
+   2. 태그도 BorderBullet으로 변경
+1. 미리 만들어논 prefab내에 Bullet.cs를 넣어준다.
+1. 테스트 /정상
+
+#### 발사체 생성(오브젝트 생성)
+
+1. 코드
+
+   ```cs
+   public GameObject bulletObjA;
+   public GameObject bulletObjB;
+
+   void Update()
+   {
+   	Move();
+   	Fire();
+   }
+
+   void Move(){
+   	//...
+   }
+
+   void Fire(){
+   	float forcePower = 10f;
+   	// GameObject bulletA = Instantiate(bulletObjA,transform);
+   	GameObject bullet = Instantiate(bulletObjA,transform.position,transform.rotation);
+   	Rigidbody2D rigid = bullet.GetComponent<Rigidbody2D>();
+   	rigid.AddForce(Vector2.up * forcePower,ForceMode2D.Impulse);
+   }
+   ```
+
+1. inspector 내에서 bullet 객체 넣어주기
+
+#### 발사체 다듬기
+
+1. //fire 로직 수정
+
+```cs
+public float maxShotDelay;
+public float curShotDelay;
+
+void Update()
+{
+	//...
+	Reload();
+}
+
+void Fire(){
+	if(!Input.GetButton("Fire1")) return;
+
+	if(curShotDelay < maxShotDelay) return;
+
+	// before logic
+
+	curShotDelay = 0;
+}
+```
+
+1. inspector에서 max shot delay 조정 0.15
+
+#### 발사체 파워
+
+1. 코드
+
+```cs
+    public float power;
+
+    void Fire(){
+        if(!Input.GetButton("Fire1")) return;
+
+        if(curShotDelay < maxShotDelay) return;
+
+        switch(power){
+            case 1:
+                GameObject bullet = Instantiate(bulletObjA,transform.position,transform.rotation);
+                Rigidbody2D rigid = bullet.GetComponent<Rigidbody2D>();
+                rigid.AddForce(Vector2.up * 10f,ForceMode2D.Impulse);
+                break;
+            case 2:
+                FireCase2();
+                break;
+            case 3:
+                FireCase2();  
+                GameObject bulletB = Instantiate(bulletObjB,transform.position,transform.rotation);
+                Rigidbody2D rigidB = bulletB.GetComponent<Rigidbody2D>();
+                rigidB.AddForce(Vector2.up * 10f,ForceMode2D.Impulse);
+                break;
+        }
+        // curShotDelay -= maxShotDelay;
+        curShotDelay = 0;
+    }
+
+    void FireCase2(){
+        GameObject bulletR = Instantiate(bulletObjA,transform.position + Vector3.right*0.1f,transform.rotation);
+        GameObject bulletL = Instantiate(bulletObjA,transform.position + Vector3.left*0.1f ,transform.rotation);
+        Rigidbody2D rigidR = bulletR.GetComponent<Rigidbody2D>();
+        Rigidbody2D rigidL = bulletL.GetComponent<Rigidbody2D>();
+        rigidR.AddForce(Vector2.up * 10f,ForceMode2D.Impulse);
+        rigidL.AddForce(Vector2.up * 10f,ForceMode2D.Impulse);
+    }
+```
+
+1. 테스트 / 정상
+
 ###
