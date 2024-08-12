@@ -561,4 +561,184 @@ void Fire(){
    }
    ```
 
+### 2D 종스크롤 슈팅 - UI 간단하게 완성하기 [B31]
+
+#### 목숨과 점수 UI 배치
+
+1. Player.cs
+2. 코드
+3. life3
+4. 하이라키에 canvas > text 추가(Score Text)
+   1. 상단에 좌우꽉차게
+   2. 라벨 999,999,999
+   3. 볼드
+   4. 높이 100
+   5. 폰트크기 25
+   6. 중앙정렬, 중앙정렬
+5. Image도 3개추가(Life Icon)
+   1. 앵커 좌상단
+   2. 소스 Life
+   3. 가로세로 100 100
+   4. pos x 10 posy -10
+      1. x105씩증가
+6. Canvas에서 Canvas Scaler값을
+   1. Scale with Screen Size : 기준 해동사도의 UI 크기 유지
+   2. (해상도와무관하게 크기를 유지할 수 있음)
+   3. 현재는 1080 1920 사용
+7. Score Text 복사 (GameOver Text)
+   1. 앵커 화면 정중앙 (최대 x)
+   2. pos y 30
+   3. 폰트 크기 100
+   4. 높이 150
+8. Canvas 내에 Button 추가(Retry)
+   1. pos y -150
+   2. 가로 300 세로 200
+   3. 이미지 소스 Button
+9. 아틀라스에서 User Interface 아래 > Button 같은경우
+   1. ![[Pasted image 20240811213925.png]]
+   2. 이렇게 조정을 해주어야한다.(파란선과 녹색선의 위치를 잘 봐야한다.)
+   3. 조정 후 apply
+10. Retry 이하의 Text
+    1. 볼드
+    2. 라벨 REtry?
+    3. 크기 65
+11. Canvas 내에 빈 객체 추가(GameOver Set)
+    1. 이하로 Retry와 GameOvet Text를 넣어준다.
+
+#### UI 로직
+
+https://www.youtube.com/watch?v=qXa7y1Que6s&list=PLO-mt5Iu5TeYI4dbYwWP8JqZMC9iuUIW2&index=35
+
+1. 코드
+2. GameManager.cs
+
+   ```cs
+   public Text scoreText;
+   public Image[] lifeImage;
+   public GameObject gameOverSet;
+
+   void Update()
+   {
+   	curSpawnDelay+=Time.deltaTime;
+
+   	if(curSpawnDelay > maxSpawnDelay){
+   		//...
+   	}
+
+   	// #.UI Score Update
+   	Player playerLogic = player.GetComponent<Player>();
+   	scoreText.text = string.Format("{0:n0}",playerLogic.score);
+   }
+
+   public void UpdateLifeIcon(int life){
+   	// #.UI Life Init Disable
+   	for(int index=0;index<3;index++){
+   		lifeImage[index].color= new Color(1,1,1,0);
+   	}
+
+   	// #.UI Life Init Active
+   	for(int index=0;index<life;index++){
+   		lifeImage[index].color= new Color(1,1,1,1);
+   	}
+   }
+
+   public void GameOver(){
+   	gameOverSet.SetActive(true);
+   }
+
+   public void GameRetry(){
+   	SceneManager.LoadScene(0);
+   }
+   ```
+
+3. Enemy.cs
+
+   ```cs
+   public int enemyScore;
+
+   void OnHit(int dmg){
+   	health -= dmg;
+   	spriteRenderer.sprite = sprites[1];
+   	Invoke("ReturnSprite",0.1f);
+
+   	if(health<=0){
+   		Player playerLogic = GameManager.instance.player.GetComponent<Player>();
+   		playerLogic.score += enemyScore;
+   		Destroy(gameObject);
+   	}
+   }
+   ```
+
+4. Player.cs
+
+   ```cs
+   void OnTriggerEnter2D(Collider2D other)
+   {
+   	if(other.gameObject.CompareTag("Border")){
+   		//...
+   	}else if(other.gameObject.CompareTag("EnemyBullet") || other.gameObject.CompareTag("Enemy")){
+   		life--;
+   		GameManager.instance.UpdateLifeIcon(life);
+
+   		if(life==0){
+   			GameManager.instance.GameOver();
+   		}else{
+   			GameManager.instance.RespawnPlayer();
+   		}
+
+   		gameObject.SetActive(false);
+   		Destroy(other.gameObject);
+   	}
+   }
+   ```
+
+5. GameManager의 inspector에서 연결
+6. Enemy prefab에서 enemyScore 연결
+7. 테스트
+   1. 한번에 2개의 미사일을 맞으면 라이프가 2번감소됨
+
+#### 예외 처리
+
+1. 중복피격을 방지하기위해 player내에 bool 변수추가
+2. player.cs
+
+   ```cs
+   public bool isHit;
+
+   void OnTriggerEnter2D(Collider2D other)
+   {
+
+   	if(other.gameObject.CompareTag("Border")){
+   		//...
+   	}else if(other.gameObject.CompareTag("EnemyBullet") || other.gameObject.CompareTag("Enemy")){
+   		if(isHit) return;
+
+   		isHit = true;
+   		life--;
+
+   		//...
+
+   	}
+
+   }
+   ```
+
+3. GameManager.cs
+
+   ```cs
+   void RespawnPlayerExe(){
+
+   	player.transform.position = Vector3.down * 3.5f;
+
+   	player.SetActive(true);
+
+
+
+   	Player playerLogic = player.GetComponent<Player>();
+
+   	playerLogic.isHit = false;
+
+   }
+   ```
+
 ###

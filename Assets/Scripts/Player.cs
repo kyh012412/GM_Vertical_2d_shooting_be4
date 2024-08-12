@@ -9,7 +9,8 @@ public class Player : MonoBehaviour
     public bool isTouchRight;
     public bool isTouchLeft;
 
-    
+    public int life;
+    public int score;
     public float speed;
     public float power;
     public float maxShotDelay;
@@ -17,6 +18,8 @@ public class Player : MonoBehaviour
 
     public GameObject bulletObjA;
     public GameObject bulletObjB;
+
+    public bool isHit;
 
     Animator anim;
 
@@ -118,8 +121,19 @@ public class Player : MonoBehaviour
                     break;
             }
         }else if(other.gameObject.CompareTag("EnemyBullet") || other.gameObject.CompareTag("Enemy")){
+            if(isHit) return;
+
+            isHit = true;
+            life--;
+            GameManager.instance.UpdateLifeIcon(life);
+
+            if(life==0){
+                GameManager.instance.GameOver();
+            }else{
+                GameManager.instance.RespawnPlayer();
+            }
             gameObject.SetActive(false);
-            GameManager.instance.RespawnPlayer();
+            Destroy(other.gameObject);
         }
     }
 

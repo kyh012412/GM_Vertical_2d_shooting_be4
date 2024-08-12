@@ -5,6 +5,7 @@ using UnityEngine;
 public class Enemy : MonoBehaviour
 {
     public string enemyName;
+    public int enemyScore;
     public float speed;
     public int health;
     public Sprite[] sprites;    
@@ -65,9 +66,10 @@ public class Enemy : MonoBehaviour
         Invoke("ReturnSprite",0.1f);
 
         if(health<=0){
-            Debug.Log("dead action");
+            Player playerLogic = GameManager.instance.player.GetComponent<Player>();
+            playerLogic.score += enemyScore;
             Destroy(gameObject);
-            CancelInvoke("ReturnSprite");
+            // CancelInvoke("ReturnSprite");
         }
     }
 
