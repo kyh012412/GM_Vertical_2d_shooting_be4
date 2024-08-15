@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -12,14 +13,19 @@ public class Player : MonoBehaviour
     public int life;
     public int score;
     public float speed;
-    public float power;
+    public int maxPower;
+    public int power;
+    public int maxBoom;
+    public int boom;
     public float maxShotDelay;
     public float curShotDelay;
 
     public GameObject bulletObjA;
     public GameObject bulletObjB;
+    public GameObject boomEffect;
 
     public bool isHit;
+    public bool isBoomTime;
 
     Animator anim;
 
@@ -32,6 +38,7 @@ public class Player : MonoBehaviour
     {
         Move();
         Fire();
+        Boom();
         Reload();
     }
 
@@ -103,6 +110,38 @@ public class Player : MonoBehaviour
         curShotDelay += Time.deltaTime;
     }
 
+    void Boom(){
+        if(!Input.GetButton("Fire2")) return;
+        if(isBoomTime) return;
+        if(boom <= 0) return;
+
+        boom--;
+        GameManager.instance.UpdateBoomIcon(boom);
+        isBoomTime=true;
+
+        // #1. Effect visible
+        boomEffect.SetActive(true);
+        Invoke("OffBoomEffect",4f);
+
+        // #2.Remove
+        GameObject[] enemies = GameObject.FindGameObjectsWithTag("Enemy");
+        for(int i=0;i<enemies.Length;i++){
+            Enemy enemyLogic = enemies[i].GetComponent<Enemy>();
+            enemyLogic.OnHit(1000);
+        }
+
+        // #3. Remove Enemy Bullet
+        GameObject[] bullets = GameObject.FindGameObjectsWithTag("EnemyBullet");
+        for(int i=0;i<bullets.Length;i++){
+            Destroy(bullets[i]);
+        }
+    }
+
+    void OffBoomEffect(){
+        boomEffect.SetActive(false);
+        isBoomTime=false;
+    }
+
     void OnTriggerEnter2D(Collider2D other)
     {
         if(other.gameObject.CompareTag("Border")){
@@ -134,9 +173,32 @@ public class Player : MonoBehaviour
             }
             gameObject.SetActive(false);
             Destroy(other.gameObject);
+        }else if(other.gameObject.CompareTag("Item")){
+            Item item = other.gameObject.GetComponent<Item>();
+            switch(item.type){
+                case Item.ItemType.Coin:
+                    score += 1000;
+                    break;
+                case Item.ItemType.Power:
+                    if(power == maxPower){
+                        score += 500;
+                    }else{
+                        power++;
+                    }
+                    break;
+                case Item.ItemType.Boom:
+                    if(boom == maxBoom){
+                        score += 500;
+                    }else{
+                        boom++;
+                        GameManager.instance.UpdateBoomIcon(boom);
+                    }
+                    break;
+            }
+
+            Destroy(other.gameObject);
         }
     }
-
     void OnTriggerExit2D(Collider2D other)
     {
         if(other.gameObject.CompareTag("Border")){

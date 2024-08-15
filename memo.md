@@ -741,4 +741,224 @@ https://www.youtube.com/watch?v=qXa7y1Que6s&list=PLO-mt5Iu5TeYI4dbYwWP8JqZMC9iuU
    }
    ```
 
+### 2D 종스크롤 슈팅 - 아이템과 필살기 구현하기 [B32]
+
+#### 준비하기
+
+1. 아틀라스를 나눠준다. (Items)
+2. 하이라키내에 객체 추가
+   1. (Boom, Power, Coin)을
+   2. (Item Boom, Item Power, Item Coin)으로 객체명을 바꿔준다.
+   3. box collider 2d 추가
+      1. Power와 Boom은 collider size 0.6, 0.5로변경
+      2. coin은 Circle collider
+      3. 모두 is trigger 체크
+   4. rigidbody 2d 추가
+      1. gravity scale 0
+   5. item.cs 추가
+3. Item.cs 생성
+
+   ```cs
+   public class Item : MonoBehaviour
+   {
+       public enum ItemType {Power,Boom,Coin}
+       public ItemType type;
+       Rigidbody2D rigid;
+
+       void Awake()
+       {
+           rigid = GetComponent<Rigidbody2D>();
+           rigid.velocity = Vector2.down * 0.1f;
+       }
+   }
+   ```
+
+4. Animation 넣어주기
+5. Item Tag 달아주기
+
+#### 충돌 로직
+
+1. Player.cs
+
+   ```cs
+   public int maxPower;
+   public int power;
+
+   void OnTriggerEnter2D(Collider2D other)
+   {
+   	if(other.gameObject.CompareTag("Border")){
+   		//... 
+   	}else if(other.gameObject.CompareTag("EnemyBullet") || other.gameObject.CompareTag("Enemy")){
+   		//...
+   	}else if(other.gameObject.CompareTag("Item")){
+   		Item item = other.gameObject.GetComponent<Item>();
+   		switch(item.type){
+   			case Item.ItemType.Coin:
+   				score += 1000;
+   				break;
+   			case Item.ItemType.Power:
+   				if(power == maxPower){
+   					score += 500;
+   				}else{
+   					power++;
+   				}
+   				break;
+   			case Item.ItemType.Boom:
+   				break;
+   		}
+   	}
+   }
+   ```
+
+#### 필살기
+
+1. Boom 아틀라스의
+   1. pixel per unit 크기를 24> 15로 변경
+2. Boom을 하이라키에 끌어놓기 (BoomEffect)
+   1. 위치 초기화
+   2. order in layer값 -1
+   3. animation 추가
+      1. Speed 3
+   4. 비활성화
+3. background 의 order in layer값 -2
+4. Player에 변수로 BoomEffect(Game Object) 추가
+   1. `public GameObject boomEffect;`
+   2. maxPower를 inspector에서 설정 3
+   3. 기본 power 1
+5. Enemy.cs (코드)
+   1. OnHit 메서드 접근제어자를 public으로 변경
+   2. `public void OnHit(int dmg)`
+6. Player.cs
+
+   ```cs
+   public int maxBoom;
+   public int boom;
+   public GameObject boomEffect;
+   public bool isBoomTime;
+
+   void Update()
+   {
+   	Move();
+   	Fire();
+   	Boom();
+   	Reload();
+   }
+
+   void Boom(){
+   	if(!Input.GetButton("Fire2")) return;
+   	if(isBoomTime) return;
+   	if(boom <= 0) return;
+
+   	boom--;
+   	GameManager.instance.UpdateBoomIcon(boom);
+   	isBoomTime=true;
+
+   	// #1. Effect visible
+   	boomEffect.SetActive(true);
+   	Invoke("OffBoomEffect",4f);
+
+   	// #2.Remove
+   	GameObject[] enemies = GameObject.FindGameObjectsWithTag("Enemy");
+   	for(int i=0;i<enemies.Length;i++){
+   		Enemy enemyLogic = enemies[i].GetComponent<Enemy>();
+   		enemyLogic.OnHit(1000);
+   	}
+
+   	// #3. Remove Enemy Bullet
+   	GameObject[] bullets = GameObject.FindGameObjectsWithTag("EnemyBullet");
+   	for(int i=0;i<bullets.Length;i++){
+   		Destroy(bullets[i]);
+   	}
+   }
+
+   void OffBoomEffect(){
+   	boomEffect.SetActive(false);
+   	isBoomTime=false;
+   }
+
+   void OnTriggerEnter2D(Collider2D other)
+   {
+   	if(other.gameObject.CompareTag("Border")){
+   		//...
+   	}else if(other.gameObject.CompareTag("EnemyBullet") || other.gameObject.CompareTag("Enemy")){
+   		//...
+   	}else if(other.gameObject.CompareTag("Item")){
+   		Item item = other.gameObject.GetComponent<Item>();
+   		switch(item.type){
+   			case Item.ItemType.Coin:
+   				//...
+   			case Item.ItemType.Power:
+   				//...
+   			case Item.ItemType.Boom:
+   				if(boom == maxBoom){
+   					score += 500;
+   				}else{
+   					boom++;
+   					GameManager.instance.UpdateBoomIcon(boom);
+   				}
+   				break;
+   		}
+
+   		Destroy(other.gameObject);
+   	}
+   }
+   ```
+
+   1. enter collision 분기
+   2. fire2
+
+7. 폭탄 UI 생성
+8. Life Icon 복사 (Boom Icon)
+   1. 앵커 우상단
+   2. pos x -10, pos y -10
+   3. 소스 이미지 Boom 4
+9. Boom Icon을 Max 개수에 맞게 복사와 배치
+10. GameManger에 연결
+11. GameManager.cs
+12. `UpdateBoomIcon`메서드 연결
+13. Boom 1,2,3 알파값을 0인상태로 시작
+14. 테스트 / 정상
+15. Item 3개 prefab화
+
+#### 아이템 드랍
+
+1. Enemy.cs 내에 GameObject (Item 들 추가)
+2. (이하에 코드추가)
+
+#### 예외 처리
+
+1. Enemy.cs
+
+   ```cs
+   public void OnHit(int dmg){
+   	if(health <=0) return;
+   	health -= dmg;
+   	spriteRenderer.sprite = sprites[1];
+   	Invoke("ReturnSprite",0.1f);
+
+   	if(health<=0){
+   		Player playerLogic = GameManager.instance.player.GetComponent<Player>();
+   		playerLogic.score += enemyScore;
+
+   		// #.Random Ratio Item Drop
+   		int ran = Random.Range(0,10);
+   		if(ran < 3){
+   			Debug.Log("item didn't dropped");
+   			//....
+   		}
+   		else if(ran < 6){ // Coin
+   			Instantiate(itemCoin,transform.position,Quaternion.identity);
+   		}
+   		else if(ran < 8){ // Power
+   			Instantiate(itemPower,transform.position,Quaternion.identity);
+   		}
+   		else if(ran < 10){ // Boom
+   			Instantiate(itemCoin,transform.position,Quaternion.identity);
+   		}
+
+   		Destroy(gameObject);
+   	}
+   }
+   ```
+
 ###
