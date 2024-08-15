@@ -961,4 +961,87 @@ https://www.youtube.com/watch?v=qXa7y1Que6s&list=PLO-mt5Iu5TeYI4dbYwWP8JqZMC9iuU
    }
    ```
 
+### 2D 종스크롤 슈팅 - 원근감있는 무한 배경 만들기 [B33]
+
+https://www.youtube.com/watch?v=KUQAULcpYZU&list=PLO-mt5Iu5TeYtWvM9eN-xnwRbyUAMWd3b&index=7
+
+#### 준비하기
+
+1. 빈 객체 3개 Back A,B,C
+   1. 각각의 객체내에 sprite를 넣어주기
+   2. bottom 부터 order를 -5 -4 -3
+   3. 3개씩 만들어주기
+   4. 0번때는 y -10
+   5. 2번대는 y 10
+2. BackGround.cs
+
+   ```cs
+   public class BackGround : MonoBehaviour
+   {
+       public float speed;
+
+       void Update()
+       {
+           Vector3 curPos = transform.position;
+           Vector3 nextPos = Vector3.down * speed * Time.deltaTime;
+           transform.position = curPos + nextPos;
+       }
+   }
+   ```
+
+#### 스크롤링
+
+1. BackGround.cs
+
+   ```cs
+   public class BackGround : MonoBehaviour
+   {
+       public float speed;
+       public int startIndex;
+       public int endIndex;
+       public Transform[] sprites;
+
+       float viewHeight;
+
+       void Awake()
+       {
+           viewHeight = Camera.main.orthographicSize*2;
+       }
+
+       void Update()
+       {
+           Move();
+           Scrolling();
+       }
+
+       void Move(){
+           Vector3 curPos = transform.position;
+           Vector3 nextPos = Vector3.down * speed * Time.deltaTime;
+           transform.position = curPos + nextPos;
+       }
+
+       void Scrolling(){
+           if(sprites[endIndex].position.y < viewHeight * (-1)){
+               // #.Sprite ReUse
+               Vector3 backSpritePos = sprites[startIndex].localPosition;
+               Vector3 frontSpritePos = sprites[endIndex].localPosition;
+               sprites[endIndex].transform.localPosition = backSpritePos + Vector3.up*10;
+
+               // #.Cursor Index Change
+               startIndex=++startIndex%3;
+               endIndex=++endIndex%3;
+           }
+       }
+   }
+   ```
+
+1. _카메라 높이를 가져오는 방법_
+   1. Camera.main.orthographicSize
+1. end가 0 start가 2
+
+#### 패럴랙스
+
+1. Parallax : 거리에 따른 상대적 속도를 활용한 기술
+2. Speed값을 4,2,1로 바깥 테두리를 빠른속도를 준다.
+
 ###
