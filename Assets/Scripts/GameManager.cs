@@ -1,7 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
-using Unity.Mathematics;
-using UnityEditor.SearchService;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -21,11 +17,17 @@ public class GameManager : MonoBehaviour
     public Image[] boomImage;
     public GameObject gameOverSet;
 
+    public ObjectManager objectManager;
+
     void Awake()
     {
         if(instance==null){
             instance=this;
         }
+    }
+
+    void ReadSpawnFile(){
+
     }
     
     void Update()
@@ -46,12 +48,14 @@ public class GameManager : MonoBehaviour
     void SpawnEnemy(){
         int ranEnemy = Random.Range(0,enemyObjs.Length);
         int ranPoint = Random.Range(0,spawnPoints.Length);
-
-        GameObject enemy = Instantiate(enemyObjs[ranEnemy],spawnPoints[ranPoint].position,spawnPoints[ranPoint].rotation);
+        GameObject enemy = objectManager.MakeObj((ObjectManager.Type)ranEnemy); // 0~2
+        enemy.transform.position = spawnPoints[ranPoint].position;
+        
         Rigidbody2D rigid = enemy.GetComponent<Rigidbody2D>();
 
         Enemy enemyLogic = enemy.GetComponent<Enemy>();
         enemyLogic.player = player;
+        enemyLogic.objectManager=objectManager;
 
         if(ranPoint == 5 || ranPoint == 6){
             rigid.velocity = Vector2.left * enemyLogic.speed + Vector2.down;

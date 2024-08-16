@@ -28,6 +28,7 @@ public class Player : MonoBehaviour
     public bool isBoomTime;
 
     Animator anim;
+    public ObjectManager objectManager;
 
     void Awake()
     {
@@ -71,14 +72,12 @@ public class Player : MonoBehaviour
     }
 
     void Fire(){
-
         // if(!Input.GetButton("Fire1")) return;
-
         if(curShotDelay < maxShotDelay) return;
-
         switch(power){
             case 1:
-                GameObject bullet = Instantiate(bulletObjA,transform.position,transform.rotation);
+                GameObject bullet = objectManager.MakeObj(ObjectManager.Type.BulletPlayerA);
+                bullet.transform.position = transform.position;
                 Rigidbody2D rigid = bullet.GetComponent<Rigidbody2D>();
                 rigid.AddForce(Vector2.up * 10f,ForceMode2D.Impulse);
                 break;
@@ -87,7 +86,8 @@ public class Player : MonoBehaviour
                 break;
             case 3:
                 FireCase2();   
-                GameObject bulletB = Instantiate(bulletObjB,transform.position,transform.rotation);
+                GameObject bulletB = objectManager.MakeObj(ObjectManager.Type.BulletPlayerB);
+                bulletB.transform.position = transform.position;
                 Rigidbody2D rigidB = bulletB.GetComponent<Rigidbody2D>();
                 rigidB.AddForce(Vector2.up * 10f,ForceMode2D.Impulse);
                 break;
@@ -98,8 +98,12 @@ public class Player : MonoBehaviour
     }
 
     void FireCase2(){
-        GameObject bulletR = Instantiate(bulletObjA,transform.position + Vector3.right*0.1f,transform.rotation);
-        GameObject bulletL = Instantiate(bulletObjA,transform.position + Vector3.left*0.1f ,transform.rotation);
+        GameObject bulletR = objectManager.MakeObj(ObjectManager.Type.BulletPlayerA);
+        GameObject bulletL = objectManager.MakeObj(ObjectManager.Type.BulletPlayerA);
+
+        bulletR.transform.position = transform.position  + Vector3.right*0.1f;
+        bulletL.transform.position = transform.position  + Vector3.left*0.1f;
+
         Rigidbody2D rigidR = bulletR.GetComponent<Rigidbody2D>();
         Rigidbody2D rigidL = bulletL.GetComponent<Rigidbody2D>();
         rigidR.AddForce(Vector2.up * 10f,ForceMode2D.Impulse);
@@ -124,17 +128,13 @@ public class Player : MonoBehaviour
         Invoke("OffBoomEffect",4f);
 
         // #2.Remove
-        GameObject[] enemies = GameObject.FindGameObjectsWithTag("Enemy");
-        for(int i=0;i<enemies.Length;i++){
-            Enemy enemyLogic = enemies[i].GetComponent<Enemy>();
-            enemyLogic.OnHit(1000);
-        }
-
+        DeactivateGroup(objectManager.GetPool(ObjectManager.Type.EnemyA));
+        DeactivateGroup(objectManager.GetPool(ObjectManager.Type.EnemyB));
+        DeactivateGroup(objectManager.GetPool(ObjectManager.Type.EnemyC));
+        
         // #3. Remove Enemy Bullet
-        GameObject[] bullets = GameObject.FindGameObjectsWithTag("EnemyBullet");
-        for(int i=0;i<bullets.Length;i++){
-            Destroy(bullets[i]);
-        }
+        DeactivateGroup(objectManager.GetPool(ObjectManager.Type.BulletEnemyA));
+        DeactivateGroup(objectManager.GetPool(ObjectManager.Type.BulletEnemyB));
     }
 
     void OffBoomEffect(){
@@ -172,7 +172,7 @@ public class Player : MonoBehaviour
                 GameManager.instance.RespawnPlayer();
             }
             gameObject.SetActive(false);
-            Destroy(other.gameObject);
+            other.gameObject.SetActive(false);
         }else if(other.gameObject.CompareTag("Item")){
             Item item = other.gameObject.GetComponent<Item>();
             switch(item.type){
@@ -196,9 +196,25 @@ public class Player : MonoBehaviour
                     break;
             }
 
-            Destroy(other.gameObject);
+            other.gameObject.SetActive(false);
         }
     }
+
+    //active 인것만 Deactivate하기
+    void DeactivateGroup(GameObject[] targetGroup){
+        for(int i=0;i<targetGroup.Length;i++){
+            if(!targetGroup[i].activeSelf) return;
+
+            Enemy enemyLogic = targetGroup[i].GetComponent<Enemy>();
+            if(enemyLogic) {
+                enemyLogic.OnHit(1000);
+                return;
+            }
+
+            targetGroup[i].SetActive(false);
+        }
+    }
+
     void OnTriggerExit2D(Collider2D other)
     {
         if(other.gameObject.CompareTag("Border")){

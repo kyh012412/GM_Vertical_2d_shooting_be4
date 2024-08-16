@@ -4,13 +4,17 @@ using UnityEngine;
 
 public class Item : MonoBehaviour
 {
-    public enum ItemType {Power,Boom,Coin}
+    public enum ItemType {Power,Boom,Coin};
     public ItemType type;
     Rigidbody2D rigid;
 
     void Awake()
     {
         rigid = GetComponent<Rigidbody2D>();
-        rigid.velocity = Vector2.down * 0.1f;
+    }
+
+    void OnEnable()
+    {
+        rigid.velocity = Vector2.down * 1f;
     }
 }

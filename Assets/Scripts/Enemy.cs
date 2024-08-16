@@ -1,6 +1,8 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Mathematics;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 public class Enemy : MonoBehaviour
 {
@@ -19,6 +21,7 @@ public class Enemy : MonoBehaviour
     public GameObject itemBoom;
     public GameObject player;
 
+    public ObjectManager objectManager;
     SpriteRenderer spriteRenderer;
 
     void Awake()
@@ -36,15 +39,20 @@ public class Enemy : MonoBehaviour
         if(curShotDelay < maxShotDelay) return;
 
         if(enemyName == "A"){
-            GameObject bullet = Instantiate(bulletObjA,transform.position,transform.rotation);
+            GameObject bullet = objectManager.MakeObj(ObjectManager.Type.BulletEnemyA);
+            //Instantiate(bulletObjA,transform.position,transform.rotation);
+            bullet.transform.position=transform.position;
             Rigidbody2D rigid = bullet.GetComponent<Rigidbody2D>();
 
             Vector3 dirVec = player.transform.position - transform.position;
 
             rigid.AddForce(dirVec.normalized * 4f,ForceMode2D.Impulse);
         }else if(enemyName == "C"){
-            GameObject bulletR = Instantiate(bulletObjA,transform.position + Vector3.right * 0.3f,transform.rotation);
-            GameObject bulletL = Instantiate(bulletObjA,transform.position + Vector3.left * 0.3f,transform.rotation);
+            GameObject bulletR = objectManager.MakeObj(ObjectManager.Type.BulletEnemyA);
+            GameObject bulletL = objectManager.MakeObj(ObjectManager.Type.BulletEnemyA);
+            
+            bulletR.transform.position = transform.position + Vector3.right * 0.3f;
+            bulletL.transform.position = transform.position + Vector3.left * 0.3f;
             
             Rigidbody2D rigidR = bulletR.GetComponent<Rigidbody2D>();
             Rigidbody2D rigidL = bulletL.GetComponent<Rigidbody2D>();
@@ -72,6 +80,7 @@ public class Enemy : MonoBehaviour
         if(health<=0){
             Player playerLogic = GameManager.instance.player.GetComponent<Player>();
             playerLogic.score += enemyScore;
+            GameObject item=null;
 
             // #.Random Ratio Item Drop
             int ran = Random.Range(0,10);
@@ -80,16 +89,20 @@ public class Enemy : MonoBehaviour
                 //....
             }
             else if(ran < 6){ // Coin
-                Instantiate(itemCoin,transform.position,Quaternion.identity);
+                item = objectManager.MakeObj(ObjectManager.Type.ItemCoin);
             }
             else if(ran < 8){ // Power
-                Instantiate(itemPower,transform.position,Quaternion.identity);
+                item = objectManager.MakeObj(ObjectManager.Type.ItemPower);
             }
             else if(ran < 10){ // Boom
-                Instantiate(itemCoin,transform.position,Quaternion.identity);
+                item = objectManager.MakeObj(ObjectManager.Type.ItemBoom);
             }
+            
+            gameObject.SetActive(false);
+            transform.rotation = quaternion.identity;
 
-            Destroy(gameObject);
+            if(!item) return;
+            item.transform.position  = transform.position;
             // CancelInvoke("ReturnSprite");
         }
     }
@@ -102,13 +115,29 @@ public class Enemy : MonoBehaviour
     {
         switch(other.gameObject.tag){
             case "BorderBullet":
-                Destroy(gameObject);
+                gameObject.SetActive(false);
+                transform.rotation = quaternion.identity;
                 break;
             case "PlayerBullet":
                 Bullet bullet = other.gameObject.GetComponent<Bullet>();
                 OnHit(bullet.dmg);
 
-                Destroy(other.gameObject);
+                other.gameObject.SetActive(false);
+                break;
+        }
+    }
+
+    void OnEnable()
+    {
+        switch(enemyName){
+            case "C":
+                health=40;
+                break;
+            case "B":
+                health=10;
+                break;
+            case "A":
+                health=3;
                 break;
         }
     }

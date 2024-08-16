@@ -1044,4 +1044,623 @@ https://www.youtube.com/watch?v=KUQAULcpYZU&list=PLO-mt5Iu5TeYtWvM9eN-xnwRbyUAMW
 1. Parallax : 거리에 따른 상대적 속도를 활용한 기술
 2. Speed값을 4,2,1로 바깥 테두리를 빠른속도를 준다.
 
+### 2D 종스크롤 슈팅 - 최적화의 기본, 오브젝트 풀링 (어려움!) [B34]
+
+#### 오브젝트 풀링이란?
+
+1. 객체를 생성 삭제하면
+   1. 쓰레기가 쌓이고 garbage collector가 실행될때 잠깐 끈기는데
+   2. 쓰레기가 많으면 렉이 심하게 걸릴수 있음
+
+#### 풀 생성
+
+1. ObjectManager 생성(빈객체)
+2. ObjectManager.cs
+
+   ```cs
+   public class ObjectManager : MonoBehaviour
+   {
+       public GameObject enemyCPrefab;
+       public GameObject enemyBPrefab;
+       public GameObject enemyAPrefab;
+
+       public GameObject itemCoinPrefab;
+       public GameObject itemPowerPrefab;
+       public GameObject itemBoomPrefab;
+
+       public GameObject bulletPlayerAPrefab;
+       public GameObject bulletPlayerBPrefab;
+       public GameObject bulletEnemyAPrefab;
+       public GameObject bulletEnemyBPrefab;
+
+       GameObject[] enemyC;
+       GameObject[] enemyB;
+       GameObject[] enemyA;
+
+       GameObject[] itemCoin;
+       GameObject[] itemPower;
+       GameObject[] itemBoom;
+
+       GameObject[] bulletPlayerA;
+       GameObject[] bulletPlayerB;
+      
+       GameObject[] bulletEnemyA;
+       GameObject[] bulletEnemyB;
+
+       void Awake()
+       {
+           enemyA = new GameObject[10];
+           enemyB = new GameObject[10];
+           enemyC = new GameObject[20];
+
+           itemCoin = new GameObject[20];
+           itemPower = new GameObject[10];
+           itemBoom = new GameObject[10];
+
+           bulletPlayerA = new GameObject[100];
+           bulletPlayerB = new GameObject[100];
+          
+           bulletEnemyA = new GameObject[100];
+           bulletEnemyB = new GameObject[100];
+          
+           Generate();
+       }
+      
+       // 수정 필요
+       void Generate(){
+      
+           // #1.Enemy
+           for(int i=0;i<enemyC.Length;i++){
+               enemyC[i] = Instantiate(enemyCPrefab);
+               enemyC[i].SetActive(false);
+           }
+           for(int i=0;i<enemyB.Length;i++){
+               enemyB[i] = Instantiate(enemyBPrefab);
+               enemyB[i].SetActive(false);
+           }
+           for(int i=0;i<enemyA.Length;i++){
+               enemyA[i] = Instantiate(enemyAPrefab);
+               enemyA[i].SetActive(false);
+           }
+
+           // #2.Item
+           for(int i=0;i<itemCoin.Length;i++){
+               itemCoin[i] = Instantiate(itemCoinPrefab);
+               itemCoin[i].SetActive(false);
+           }
+           for(int i=0;i<itemPower.Length;i++){
+               itemPower[i] = Instantiate(itemPowerPrefab);
+               itemPower[i].SetActive(false);
+           }
+           for(int i=0;i<itemBoom.Length;i++){
+               itemBoom[i] = Instantiate(itemBoomPrefab);
+               itemBoom[i].SetActive(false);
+           }
+          
+           // #3.Bullet
+           for(int i=0;i<bulletPlayerA.Length;i++){
+               bulletPlayerA[i] = Instantiate(bulletPlayerAPrefab);
+               bulletPlayerA[i].SetActive(false);
+           }
+           for(int i=0;i<bulletPlayerB.Length;i++){
+               bulletPlayerB[i] = Instantiate(bulletPlayerBPrefab);
+               bulletPlayerB[i].SetActive(false);
+           }
+
+           for(int i=0;i<bulletEnemyA.Length;i++){
+               bulletEnemyA[i] = Instantiate(bulletEnemyAPrefab);
+               bulletEnemyA[i].SetActive(false);
+           }
+           for(int i=0;i<bulletEnemyB.Length;i++){
+               bulletEnemyB[i] = Instantiate(bulletEnemyBPrefab);
+               bulletEnemyB[i].SetActive(false);
+           }
+       }
+   }
+   ```
+
+#### 풀 사용하기
+
+1. 오브젝트 풀에 접근할 수 잇는 함수 생성
+2. 모든생성은 ObjectManager를 사용하며
+3. prefab의 경우 미리등록할수없기에
+4. 생성해줄때(GameManager가) ObjectManager를 연결해준다.
+5. 삭제 대신에 비활성화로 처리한다.
+6. 재사용을 위해 회전을 정상화하고, 속도를 정상화, health를 정상화한다.
+
+#### 로직 정리
+
+1. ObjectManager.cs
+
+```cs
+public class ObjectManager : MonoBehaviour
+{
+    public enum Type {EnemyC, EnemyB, EnemyA, ItemPower, ItemBoom, ItemCoin, BulletPlayerA, BulletPlayerB, BulletEnemyA, BulletEnemyB};
+
+    public GameObject enemyCPrefab;
+    public GameObject enemyBPrefab;
+    public GameObject enemyAPrefab;
+
+    public GameObject itemCoinPrefab;
+    public GameObject itemPowerPrefab;
+    public GameObject itemBoomPrefab;
+
+    public GameObject bulletPlayerAPrefab;
+    public GameObject bulletPlayerBPrefab;
+
+    public GameObject bulletEnemyAPrefab;
+    public GameObject bulletEnemyBPrefab;
+
+    GameObject[] enemyC;
+    GameObject[] enemyB;
+    GameObject[] enemyA;
+
+    GameObject[] itemCoin;
+    GameObject[] itemPower;
+    GameObject[] itemBoom;
+
+    GameObject[] bulletPlayerA;
+    GameObject[] bulletPlayerB;
+
+    GameObject[] bulletEnemyA;
+    GameObject[] bulletEnemyB;
+   
+    List<GameObject[]> pools;
+
+    void Awake()
+    {
+        //my pools definition
+        pools = new List<GameObject[]>(Enum.GetValues(typeof(Type)).Length);
+        for(int i=0;i<Enum.GetValues(typeof(Type)).Length;i++){
+            pools.Add(null);
+        }
+
+        enemyA = new GameObject[10];
+        enemyB = new GameObject[10];
+        enemyC = new GameObject[20];
+
+        itemCoin = new GameObject[20];
+        itemPower = new GameObject[10];
+        itemBoom = new GameObject[10];
+
+        bulletPlayerA = new GameObject[100];
+        bulletPlayerB = new GameObject[100];
+
+        bulletEnemyA = new GameObject[100];
+        bulletEnemyB = new GameObject[100];
+       
+        Generate();
+    }
+
+    // 수정 필요
+    void Generate(){
+		//...
+        pools[0] = enemyC;
+        pools[1] = enemyB;
+        pools[2] = enemyA;
+        pools[3] = itemPower;
+        pools[4] = itemBoom;
+        pools[5] = itemCoin;
+        pools[6] = bulletPlayerA;
+        pools[7] = bulletPlayerB;
+        pools[8] = bulletEnemyA;
+        pools[9] = bulletEnemyB;
+    }
+
+    public GameObject MakeObj(Type type){
+        GameObject[] targetPool = pools[(int)type];
+        if(targetPool.Length==0) {
+            GameObject target = InitOnePrefab(type);
+            //추가 로직 필요
+        }
+
+        for(int i=0;i<targetPool.Length;i++){
+            if(!targetPool[i].activeSelf){
+                GameObject target = targetPool[i];
+                target.SetActive(true);
+                return target ;
+            }
+        }
+        return null;
+    }
+
+    public GameObject InitOnePrefab(Type typeNum){
+        switch(typeNum){
+            case Type.EnemyC:
+                return Instantiate(enemyCPrefab);
+            case Type.EnemyB:
+                return Instantiate(enemyBPrefab);
+            case Type.EnemyA:
+                return Instantiate(enemyAPrefab);
+            case Type.ItemPower:
+                return Instantiate(itemPowerPrefab);
+            case Type.ItemBoom:
+                return Instantiate(enemyCPrefab);
+            case Type.ItemCoin:
+                return Instantiate(itemCoinPrefab);
+            case Type.BulletPlayerA:
+                return Instantiate(bulletPlayerAPrefab);
+            case Type.BulletPlayerB:
+                return Instantiate(bulletPlayerBPrefab);
+            case Type.BulletEnemyA:
+                return Instantiate(bulletEnemyAPrefab);
+            case Type.BulletEnemyB:
+                return Instantiate(bulletEnemyBPrefab);
+            default :
+                Debug.Log("에러발생");
+                break;
+        }
+        return null;
+    }
+
+    public GameObject[] GetPool(Type type){
+        return pools[(int)type];
+    }
+}
+```
+
+### 2D 종스크롤 슈팅 - 최적화의 기본, 오브젝트 풀링 (어려움!) [B34]
+
+#### 오브젝트 풀링이란?
+
+1. 객체를 생성 삭제하면
+   1. 쓰레기가 쌓이고 garbage collector가 실행될때 잠깐 끈기는데
+   2. 쓰레기가 많으면 렉이 심하게 걸릴수 있음
+
+#### 풀 생성
+
+1. ObjectManager 생성(빈객체)
+2. ObjectManager.cs
+
+   ```cs
+   public class ObjectManager : MonoBehaviour
+   {
+       public GameObject enemyCPrefab;
+       public GameObject enemyBPrefab;
+       public GameObject enemyAPrefab;
+
+       public GameObject itemCoinPrefab;
+       public GameObject itemPowerPrefab;
+       public GameObject itemBoomPrefab;
+
+       public GameObject bulletPlayerAPrefab;
+       public GameObject bulletPlayerBPrefab;
+       public GameObject bulletEnemyAPrefab;
+       public GameObject bulletEnemyBPrefab;
+
+       GameObject[] enemyC;
+       GameObject[] enemyB;
+       GameObject[] enemyA;
+
+       GameObject[] itemCoin;
+       GameObject[] itemPower;
+       GameObject[] itemBoom;
+
+       GameObject[] bulletPlayerA;
+       GameObject[] bulletPlayerB;
+      
+       GameObject[] bulletEnemyA;
+       GameObject[] bulletEnemyB;
+
+       void Awake()
+       {
+           enemyA = new GameObject[10];
+           enemyB = new GameObject[10];
+           enemyC = new GameObject[20];
+
+           itemCoin = new GameObject[20];
+           itemPower = new GameObject[10];
+           itemBoom = new GameObject[10];
+
+           bulletPlayerA = new GameObject[100];
+           bulletPlayerB = new GameObject[100];
+          
+           bulletEnemyA = new GameObject[100];
+           bulletEnemyB = new GameObject[100];
+          
+           Generate();
+       }
+      
+       // 수정 필요
+       void Generate(){
+      
+           // #1.Enemy
+           for(int i=0;i<enemyC.Length;i++){
+               enemyC[i] = Instantiate(enemyCPrefab);
+               enemyC[i].SetActive(false);
+           }
+           for(int i=0;i<enemyB.Length;i++){
+               enemyB[i] = Instantiate(enemyBPrefab);
+               enemyB[i].SetActive(false);
+           }
+           for(int i=0;i<enemyA.Length;i++){
+               enemyA[i] = Instantiate(enemyAPrefab);
+               enemyA[i].SetActive(false);
+           }
+
+           // #2.Item
+           for(int i=0;i<itemCoin.Length;i++){
+               itemCoin[i] = Instantiate(itemCoinPrefab);
+               itemCoin[i].SetActive(false);
+           }
+           for(int i=0;i<itemPower.Length;i++){
+               itemPower[i] = Instantiate(itemPowerPrefab);
+               itemPower[i].SetActive(false);
+           }
+           for(int i=0;i<itemBoom.Length;i++){
+               itemBoom[i] = Instantiate(itemBoomPrefab);
+               itemBoom[i].SetActive(false);
+           }
+          
+           // #3.Bullet
+           for(int i=0;i<bulletPlayerA.Length;i++){
+               bulletPlayerA[i] = Instantiate(bulletPlayerAPrefab);
+               bulletPlayerA[i].SetActive(false);
+           }
+           for(int i=0;i<bulletPlayerB.Length;i++){
+               bulletPlayerB[i] = Instantiate(bulletPlayerBPrefab);
+               bulletPlayerB[i].SetActive(false);
+           }
+
+           for(int i=0;i<bulletEnemyA.Length;i++){
+               bulletEnemyA[i] = Instantiate(bulletEnemyAPrefab);
+               bulletEnemyA[i].SetActive(false);
+           }
+           for(int i=0;i<bulletEnemyB.Length;i++){
+               bulletEnemyB[i] = Instantiate(bulletEnemyBPrefab);
+               bulletEnemyB[i].SetActive(false);
+           }
+       }
+   }
+   ```
+
+#### 풀 사용하기
+
+1. 오브젝트 풀에 접근할 수 잇는 함수 생성
+2. 모든생성은 ObjectManager를 사용하며
+3. prefab의 경우 미리등록할수없기에
+4. 생성해줄때(GameManager가) ObjectManager를 연결해준다.
+5. 삭제 대신에 비활성화로 처리한다.
+6. 재사용을 위해 회전을 정상화하고, 속도를 정상화, health를 정상화한다.
+
+#### 로직 정리
+
+1. GameManager.cs
+
+   ```cs
+   public ObjectManager objectManager;
+
+   void SpawnEnemy(){
+   	int ranEnemy = Random.Range(0,enemyObjs.Length);
+   	int ranPoint = Random.Range(0,spawnPoints.Length);
+   	GameObject enemy = objectManager.MakeObj((ObjectManager.Type)ranEnemy); // 0~2
+   	enemy.transform.position = spawnPoints[ranPoint].position;
+
+   	Rigidbody2D rigid = enemy.GetComponent<Rigidbody2D>();
+
+   	Enemy enemyLogic = enemy.GetComponent<Enemy>();
+   	enemyLogic.objectManager=objectManager;
+   	//...
+   }
+   ```
+
+2. Player.cs
+
+   ```cs
+   public ObjectManager objectManager;
+
+   void Fire(){
+   	if(curShotDelay < maxShotDelay) return;
+   	switch(power){
+   		case 1:
+   			GameObject bullet = objectManager.MakeObj(ObjectManager.Type.BulletPlayerA);
+   			bullet.transform.position = transform.position;
+   			//...
+   			break;
+   		case 2:
+   			FireCase2();
+   			break;
+   		case 3:
+   			FireCase2();  
+   			GameObject bulletB = objectManager.MakeObj(ObjectManager.Type.BulletPlayerB);
+   			bulletB.transform.position = transform.position;
+   			//...
+   			break;
+   	}
+
+   	// curShotDelay -= maxShotDelay;
+   	curShotDelay = 0;
+   }
+
+   void FireCase2(){
+   	GameObject bulletR = objectManager.MakeObj(ObjectManager.Type.BulletPlayerA);
+   	GameObject bulletL = objectManager.MakeObj(ObjectManager.Type.BulletPlayerA);
+
+   	bulletR.transform.position = transform.position  + Vector3.right*0.1f;
+   	bulletL.transform.position = transform.position  + Vector3.left*0.1f;
+
+   	Rigidbody2D rigidR = bulletR.GetComponent<Rigidbody2D>();
+   	Rigidbody2D rigidL = bulletL.GetComponent<Rigidbody2D>();
+   	rigidR.AddForce(Vector2.up * 10f,ForceMode2D.Impulse);
+   	rigidL.AddForce(Vector2.up * 10f,ForceMode2D.Impulse);
+   }
+
+   //active 인것만 Deactivate하기
+   void DeactivateGroup(GameObject[] targetGroup){
+   	for(int i=0;i<targetGroup.Length;i++){
+   		if(!targetGroup[i].activeSelf) return;
+
+   		Enemy enemyLogic = targetGroup[i].GetComponent<Enemy>();
+   		if(enemyLogic) {
+   			enemyLogic.OnHit(1000);
+   			return;
+   		}
+
+   		targetGroup[i].SetActive(false);
+   	}
+   }
+
+   void Boom(){
+   	//...
+
+   	// #1. Effect visible
+   	boomEffect.SetActive(true);
+   	Invoke("OffBoomEffect",4f);
+
+   	// #2.Remove
+   	DeactivateGroup(objectManager.GetPool(ObjectManager.Type.EnemyA));
+   	DeactivateGroup(objectManager.GetPool(ObjectManager.Type.EnemyB));
+   	DeactivateGroup(objectManager.GetPool(ObjectManager.Type.EnemyC));
+
+   	// #3. Remove Enemy Bullet
+   	DeactivateGroup(objectManager.GetPool(ObjectManager.Type.BulletEnemyA));
+   	DeactivateGroup(objectManager.GetPool(ObjectManager.Type.BulletEnemyB));
+   }
+
+   void OnTriggerEnter2D(Collider2D other)
+   {
+   	if(other.gameObject.CompareTag("Border")){
+   		//...
+   	}else if(other.gameObject.CompareTag("EnemyBullet") || other.gameObject.CompareTag("Enemy")){
+   		//...
+   		gameObject.SetActive(false);
+   		other.gameObject.SetActive(false);
+   	}else if(other.gameObject.CompareTag("Item")){
+   		//...
+   		other.gameObject.SetActive(false);
+   	}
+   }
+   ```
+
+3. Enemy.cs
+
+   ```cs
+   public ObjectManager objectManager;
+
+   void Fire(){
+   	if(curShotDelay < maxShotDelay) return;
+
+   	if(enemyName == "A"){
+   		GameObject bullet = objectManager.MakeObj(ObjectManager.Type.BulletEnemyA);
+   		bullet.transform.position=transform.position;
+   		Rigidbody2D rigid = bullet.GetComponent<Rigidbody2D>();
+
+   		Vector3 dirVec = player.transform.position - transform.position;
+
+   		rigid.AddForce(dirVec.normalized * 4f,ForceMode2D.Impulse);
+   	}else if(enemyName == "C"){
+   		GameObject bulletR = objectManager.MakeObj(ObjectManager.Type.BulletEnemyA);
+   		GameObject bulletL = objectManager.MakeObj(ObjectManager.Type.BulletEnemyA);
+
+   		bulletR.transform.position = transform.position + Vector3.right * 0.3f;
+   		bulletL.transform.position = transform.position + Vector3.left * 0.3f;
+
+   		//...
+   	}
+
+   	curShotDelay -= maxShotDelay;
+   }
+
+   public void OnHit(int dmg){
+   	if(health <=0) return;
+   	health -= dmg;
+   	spriteRenderer.sprite = sprites[1];
+   	Invoke("ReturnSprite",0.1f);
+
+   	if(health<=0){
+   		Player playerLogic = GameManager.instance.player.GetComponent<Player>();
+   		playerLogic.score += enemyScore;
+   		GameObject item=null;
+
+   		// #.Random Ratio Item Drop
+   		int ran = Random.Range(0,10);
+   		if(ran < 3){
+   			Debug.Log("item didn't dropped");
+   			//....
+   		}
+   		else if(ran < 6){ // Coin
+   			item = objectManager.MakeObj(ObjectManager.Type.ItemCoin);
+   		}
+   		else if(ran < 8){ // Power
+   			item = objectManager.MakeObj(ObjectManager.Type.ItemPower);
+   		}
+   		else if(ran < 10){ // Boom
+   			item = objectManager.MakeObj(ObjectManager.Type.ItemBoom);
+   		}
+   		gameObject.SetActive(false);
+   		transform.rotation = quaternion.identity;
+
+   		if(!item) return;
+   		item.transform.position  = transform.position;
+   		// CancelInvoke("ReturnSprite");
+   	}
+   }
+
+   void OnTriggerEnter2D(Collider2D other)
+   {
+   	switch(other.gameObject.tag){
+   		case "BorderBullet":
+   			gameObject.SetActive(false);
+   			transform.rotation = quaternion.identity;
+   			break;
+   		case "PlayerBullet":
+   			Bullet bullet = other.gameObject.GetComponent<Bullet>();
+   			OnHit(bullet.dmg);
+
+   			other.gameObject.SetActive(false);
+   			break;
+   	}
+   }
+
+   void OnEnable()
+   {
+   	switch(enemyName){
+   		case "C":
+   			health=40;
+   			break;
+   		case "B":
+   			health=10;
+   			break;
+   		case "A":
+   			health=3;
+   			break;
+   	}
+   }
+   ```
+
+4. Item.cs
+
+   ```cs
+   public class Item : MonoBehaviour
+   {
+       public enum ItemType {Power,Boom,Coin};
+       public ItemType type;
+       Rigidbody2D rigid;
+
+       void Awake()
+       {
+           rigid = GetComponent<Rigidbody2D>();
+       }
+
+       void OnEnable()
+       {
+           rigid.velocity = Vector2.down * 1f;
+       }
+   }
+   ```
+
+5. Bullet.cs
+   ```cs
+   public class Bullet : MonoBehaviour
+   {
+   	public int dmg;
+   	void OnTriggerEnter2D(Collider2D other)
+   	{
+   		if(other.gameObject.CompareTag("BorderBullet")){
+   			gameObject.SetActive(false);
+   		}
+   	}
+   }
+   ```
+
 ###
