@@ -111,9 +111,9 @@ public class ObjectManager : MonoBehaviour
             bulletEnemyB[i].SetActive(false);
         }
         
-        pools[0] = enemyC;
+        pools[0] = enemyA;
         pools[1] = enemyB;
-        pools[2] = enemyA;
+        pools[2] = enemyC;
         pools[3] = itemPower;
         pools[4] = itemBoom;
         pools[5] = itemCoin;

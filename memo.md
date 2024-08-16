@@ -1663,4 +1663,203 @@ public class ObjectManager : MonoBehaviour
    }
    ```
 
+### 2D 종스크롤 슈팅 - 텍스트파일을 이용한 커스텀 배치 구현 [B35]
+
+#### 구조체
+
+1. Spawn.cs
+   ```cs
+   public class Spawn
+   {
+       public float delay;
+       public ObjectManager.Type type;
+       public int point; // 인덱스
+   }
+   ```
+2.
+
+#### 텍스트 데이터
+
+1. 텍스트 데이터 (Stage 0)를 Asset/Resources 폴더에 넣어준다.
+   1. 런타임에서 불러오는 에셋이 저장된 폴더
+
+```
+1,0,1
+0.2,0,1
+0.2,0,1
+0.2,0,1
+0.2,0,1
+1,0,3
+0.2,0,3
+0.2,0,3
+0.2,0,3
+0.2,0,3
+2,1,2
+```
+
+3. GameManager.cs에서 파일을 읽을 수 있게 코드를 추가해준다.
+
+   ```cs
+   public List<Spawn> spawnList;
+   public int spawnIndex;
+   public bool spawnEnd;
+
+   void Awake()
+   {
+   	if(instance==null){
+   		instance=this;
+   		spawnList = new List<Spawn>();
+   		ReadSpawnFile();
+   	}
+   }
+
+   void ReadSpawnFile(){
+   	// #1.변수 초기화
+   	spawnList.Clear();
+   	spawnIndex=0;
+   	spawnEnd=false;
+
+   	// #2.리스폰 파일 읽기
+   	TextAsset textFile = Resources.Load("Stage 0") as TextAsset; //as Text는 자료형 검증 .. 만약에 아닐시 null처리가 됨
+
+   	StringReader stringReader = new StringReader(textFile.text);
+
+   	while(stringReader != null){
+   		string line = stringReader.ReadLine();
+   		Debug.Log(line);
+
+   		if(line == null)
+   			break;
+
+   		// # 리스폰 데이터 생성
+   		Spawn spawnData = new Spawn();
+   		spawnData.delay = float.Parse(line.Split(',')[0]);
+   		spawnData.type = (ObjectManager.Type)int.Parse(line.Split(',')[1]);
+   		spawnData.point = int.Parse(line.Split(',')[2]);
+
+   		// # 텍스트 파일 닫기
+   		spawnList.Add(spawnData);
+
+   		// # 첫번째 스폰 딜레이 적용
+   		nextSpawnDelay = spawnList[0].delay;
+   	}
+
+   	//#.텍스트 파일 닫기
+   	stringReader.Close();
+   }
+
+   void Update()
+   {
+   	curSpawnDelay+=Time.deltaTime;
+
+   	if(curSpawnDelay > nextSpawnDelay){
+   		SpawnEnemy();
+   		nextSpawnDelay = Random.Range(0.5f,3f);
+   		curSpawnDelay = 0;
+   		// curSpawnDelay -= nextSpawnDelay;
+   	}
+
+   	// #.UI Score Update
+   	Player playerLogic = player.GetComponent<Player>();
+   	scoreText.text = string.Format("{0:n0}",playerLogic.score);
+   }
+   ```
+
+1. _TextAsset : 텍스트 파일 에셋 클래스_
+1. _StringReader : 파일 내의 문자열 데이터 읽기 클래스_
+1. _ReadLine() : 텍스트 데이터를 한 줄씩 반환.(자동 줄 바꿈)_
+
+#### 데이터 적용
+
+1. GameManager.cs
+
+   ```cs
+   void ReadSpawnFile(){
+   	// #1.변수 초기화
+   	spawnList.Clear();
+   	spawnIndex=0;
+   	spawnEnd=false;
+
+   	// #2.리스폰 파일 읽기
+   	TextAsset textFile = Resources.Load("Stage 0") as TextAsset; //as Text는 자료형 검증 .. 만약에 아닐시 null처리가 됨
+
+   	StringReader stringReader = new StringReader(textFile.text);
+
+   	while(stringReader != null){
+   		string line = stringReader.ReadLine();
+   		Debug.Log(line);
+
+   		if(line == null)
+   			break;
+
+   		// # 리스폰 데이터 생성
+   		Spawn spawnData = new Spawn();
+   		spawnData.delay = float.Parse(line.Split('/')[0]);
+   		spawnData.type = (ObjectManager.Type)int.Parse(line.Split('/')[1]);
+   		spawnData.point = int.Parse(line.Split('/')[2]);
+
+   		// # 텍스트 파일 닫기
+   		spawnList.Add(spawnData);
+
+   		// # 첫번째 스폰 딜레이 적용
+   		nextSpawnDelay = spawnList[0].delay;
+   	}
+
+   	//#.텍스트 파일 닫기
+   	stringReader.Close();
+   }
+
+   void Update()
+   {
+   	curSpawnDelay+=Time.deltaTime;
+
+   	if(curSpawnDelay > nextSpawnDelay && !spawnEnd){
+   		SpawnEnemy();
+   		curSpawnDelay = 0;
+   	}
+
+   	// #.UI Score Update
+   	Player playerLogic = player.GetComponent<Player>();
+   	scoreText.text = string.Format("{0:n0}",playerLogic.score);
+   }
+
+   void SpawnEnemy(){
+   	int enemyPoint = spawnList[spawnIndex].point;
+   	GameObject enemy = objectManager.MakeObj(spawnList[spawnIndex].type); // 0~2
+   	enemy.transform.position = spawnPoints[enemyPoint].position;
+   	Rigidbody2D rigid = enemy.GetComponent<Rigidbody2D>();
+   	Enemy enemyLogic = enemy.GetComponent<Enemy>();
+   	enemyLogic.player = player;
+   	enemyLogic.objectManager=objectManager;
+
+   	if(enemyPoint == 5 || enemyPoint == 6){
+   		rigid.velocity = Vector2.left * enemyLogic.speed + Vector2.down;
+   		enemy.transform.Rotate(Vector3.back*90);
+   	}else if(enemyPoint == 7 || enemyPoint == 8){
+   		rigid.velocity = Vector2.right * enemyLogic.speed + Vector2.down;
+   		enemy.transform.Rotate(Vector3.forward*90);
+   	}else{
+   		rigid.velocity = Vector2.down * enemyLogic.speed;
+   	}
+
+   	// # 리스폰 인덱스 증가
+   	spawnIndex++;
+   	if(spawnIndex == spawnList.Count){
+   		spawnEnd = true;
+   		return;
+   	}
+
+   	// # 다음 리스폰딜레이 갱신
+   	nextSpawnDelay = spawnList[spawnIndex].delay;
+   }
+   ```
+
+1. ObjectManager.cs
+   ```cs
+   //초기화 부분중 일부수정
+   pools[0] = enemyA;
+   pools[1] = enemyB;
+   pools[2] = enemyC;
+   ```
+
 ###

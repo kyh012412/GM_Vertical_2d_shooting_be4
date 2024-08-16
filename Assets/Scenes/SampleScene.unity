@@ -625,7 +625,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 2142025598}
-  m_RootOrder: 1
+  m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &403722683
 GameObject:
@@ -978,16 +978,16 @@ MonoBehaviour:
   - {fileID: 1983813342193539281, guid: 05f3e3f9575c42840b016a99ec0cf333, type: 3}
   - {fileID: 2619360915498904405, guid: c3537ba649eb3b04797e9c8ad806e228, type: 3}
   spawnPoints:
+  - {fileID: 1421195265}
+  - {fileID: 1647928058}
   - {fileID: 1040664696}
   - {fileID: 394321621}
   - {fileID: 1527183030}
-  - {fileID: 1421195265}
-  - {fileID: 1647928058}
   - {fileID: 684338110}
   - {fileID: 110703386}
   - {fileID: 745139629}
   - {fileID: 89482499}
-  maxSpawnDelay: 2
+  nextSpawnDelay: 0
   curSpawnDelay: 0
   player: {fileID: 1310230434}
   scoreText: {fileID: 1606235785}
@@ -1001,6 +1001,8 @@ MonoBehaviour:
   - {fileID: 1456825965}
   gameOverSet: {fileID: 1344152943}
   objectManager: {fileID: 373334487}
+  spawnIndex: 0
+  spawnEnd: 0
 --- !u!1 &551437214
 GameObject:
   m_ObjectHideFlags: 0
@@ -1801,7 +1803,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 2142025598}
-  m_RootOrder: 0
+  m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1106202058
 GameObject:
@@ -2461,7 +2463,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 2142025598}
-  m_RootOrder: 3
+  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1456825963
 GameObject:
@@ -2568,7 +2570,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 2142025598}
-  m_RootOrder: 2
+  m_RootOrder: 4
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1534669924
 GameObject:
@@ -2794,7 +2796,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 2142025598}
-  m_RootOrder: 4
+  m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1676193734
 GameObject:
@@ -3689,11 +3691,11 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
+  - {fileID: 1421195265}
+  - {fileID: 1647928058}
   - {fileID: 1040664696}
   - {fileID: 394321621}
   - {fileID: 1527183030}
-  - {fileID: 1421195265}
-  - {fileID: 1647928058}
   - {fileID: 684338110}
   - {fileID: 110703386}
   - {fileID: 745139629}
