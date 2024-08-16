@@ -589,6 +589,7 @@ MonoBehaviour:
   enemyCPrefab: {fileID: 2619360915498904405, guid: c3537ba649eb3b04797e9c8ad806e228, type: 3}
   enemyBPrefab: {fileID: 1983813342193539281, guid: 05f3e3f9575c42840b016a99ec0cf333, type: 3}
   enemyAPrefab: {fileID: 3036556504495802959, guid: 265744d7eacb0ac4b97ed424d4e9c362, type: 3}
+  enemyBossPrefab: {fileID: 4659768039799684760, guid: 8cac44650bcb05d409d4749919587d8b, type: 3}
   itemCoinPrefab: {fileID: 5835006510202022922, guid: 5f34235dcf53d1148b1b385fec3a243d, type: 3}
   itemPowerPrefab: {fileID: 2113357186515336786, guid: 78c093b93f736814a9b95806c1c4109f, type: 3}
   itemBoomPrefab: {fileID: 5158690621901855000, guid: 4c62da0a54d80fa43bbbf6f0a55fcf2e, type: 3}
@@ -596,6 +597,8 @@ MonoBehaviour:
   bulletPlayerBPrefab: {fileID: 2091544780752638757, guid: 710d460057b49a34f80fb5ba24025c22, type: 3}
   bulletEnemyAPrefab: {fileID: 2091544780752638757, guid: e2f646c9468d7644597a75e60729416b, type: 3}
   bulletEnemyBPrefab: {fileID: 2091544780752638757, guid: 8f04597abe55eef45be2c666bf4ea7ea, type: 3}
+  bulletBossAPrefab: {fileID: 2091544780752638757, guid: c05e1e300b26afa42bca3f34b860719d, type: 3}
+  bulletBossBPrefab: {fileID: 2091544780752638757, guid: 66dec531f05f81c469bc3bd161762e33, type: 3}
   bulletFollowerPrefab: {fileID: 7464269235410768258, guid: 651da27ed92a00c41a83ad040f7bb974, type: 3}
 --- !u!1 &394321620
 GameObject:

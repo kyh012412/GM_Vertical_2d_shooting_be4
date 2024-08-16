@@ -173,7 +173,9 @@ public class Player : MonoBehaviour
                 GameManager.instance.RespawnPlayer();
             }
             gameObject.SetActive(false);
-            other.gameObject.SetActive(false);
+            if(other.gameObject.GetComponent<Enemy>()!=null && other.gameObject.GetComponent<Enemy>().enemyName != "Boss"){
+                other.gameObject.SetActive(false);
+            }
         }else if(other.gameObject.CompareTag("Item")){
             Item item = other.gameObject.GetComponent<Item>();
             switch(item.type){
