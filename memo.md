@@ -1170,261 +1170,6 @@ https://www.youtube.com/watch?v=KUQAULcpYZU&list=PLO-mt5Iu5TeYtWvM9eN-xnwRbyUAMW
 
 #### 로직 정리
 
-1. ObjectManager.cs
-
-```cs
-public class ObjectManager : MonoBehaviour
-{
-    public enum Type {EnemyC, EnemyB, EnemyA, ItemPower, ItemBoom, ItemCoin, BulletPlayerA, BulletPlayerB, BulletEnemyA, BulletEnemyB};
-
-    public GameObject enemyCPrefab;
-    public GameObject enemyBPrefab;
-    public GameObject enemyAPrefab;
-
-    public GameObject itemCoinPrefab;
-    public GameObject itemPowerPrefab;
-    public GameObject itemBoomPrefab;
-
-    public GameObject bulletPlayerAPrefab;
-    public GameObject bulletPlayerBPrefab;
-
-    public GameObject bulletEnemyAPrefab;
-    public GameObject bulletEnemyBPrefab;
-
-    GameObject[] enemyC;
-    GameObject[] enemyB;
-    GameObject[] enemyA;
-
-    GameObject[] itemCoin;
-    GameObject[] itemPower;
-    GameObject[] itemBoom;
-
-    GameObject[] bulletPlayerA;
-    GameObject[] bulletPlayerB;
-
-    GameObject[] bulletEnemyA;
-    GameObject[] bulletEnemyB;
-   
-    List<GameObject[]> pools;
-
-    void Awake()
-    {
-        //my pools definition
-        pools = new List<GameObject[]>(Enum.GetValues(typeof(Type)).Length);
-        for(int i=0;i<Enum.GetValues(typeof(Type)).Length;i++){
-            pools.Add(null);
-        }
-
-        enemyA = new GameObject[10];
-        enemyB = new GameObject[10];
-        enemyC = new GameObject[20];
-
-        itemCoin = new GameObject[20];
-        itemPower = new GameObject[10];
-        itemBoom = new GameObject[10];
-
-        bulletPlayerA = new GameObject[100];
-        bulletPlayerB = new GameObject[100];
-
-        bulletEnemyA = new GameObject[100];
-        bulletEnemyB = new GameObject[100];
-       
-        Generate();
-    }
-
-    // 수정 필요
-    void Generate(){
-		//...
-        pools[0] = enemyC;
-        pools[1] = enemyB;
-        pools[2] = enemyA;
-        pools[3] = itemPower;
-        pools[4] = itemBoom;
-        pools[5] = itemCoin;
-        pools[6] = bulletPlayerA;
-        pools[7] = bulletPlayerB;
-        pools[8] = bulletEnemyA;
-        pools[9] = bulletEnemyB;
-    }
-
-    public GameObject MakeObj(Type type){
-        GameObject[] targetPool = pools[(int)type];
-        if(targetPool.Length==0) {
-            GameObject target = InitOnePrefab(type);
-            //추가 로직 필요
-        }
-
-        for(int i=0;i<targetPool.Length;i++){
-            if(!targetPool[i].activeSelf){
-                GameObject target = targetPool[i];
-                target.SetActive(true);
-                return target ;
-            }
-        }
-        return null;
-    }
-
-    public GameObject InitOnePrefab(Type typeNum){
-        switch(typeNum){
-            case Type.EnemyC:
-                return Instantiate(enemyCPrefab);
-            case Type.EnemyB:
-                return Instantiate(enemyBPrefab);
-            case Type.EnemyA:
-                return Instantiate(enemyAPrefab);
-            case Type.ItemPower:
-                return Instantiate(itemPowerPrefab);
-            case Type.ItemBoom:
-                return Instantiate(enemyCPrefab);
-            case Type.ItemCoin:
-                return Instantiate(itemCoinPrefab);
-            case Type.BulletPlayerA:
-                return Instantiate(bulletPlayerAPrefab);
-            case Type.BulletPlayerB:
-                return Instantiate(bulletPlayerBPrefab);
-            case Type.BulletEnemyA:
-                return Instantiate(bulletEnemyAPrefab);
-            case Type.BulletEnemyB:
-                return Instantiate(bulletEnemyBPrefab);
-            default :
-                Debug.Log("에러발생");
-                break;
-        }
-        return null;
-    }
-
-    public GameObject[] GetPool(Type type){
-        return pools[(int)type];
-    }
-}
-```
-
-### 2D 종스크롤 슈팅 - 최적화의 기본, 오브젝트 풀링 (어려움!) [B34]
-
-#### 오브젝트 풀링이란?
-
-1. 객체를 생성 삭제하면
-   1. 쓰레기가 쌓이고 garbage collector가 실행될때 잠깐 끈기는데
-   2. 쓰레기가 많으면 렉이 심하게 걸릴수 있음
-
-#### 풀 생성
-
-1. ObjectManager 생성(빈객체)
-2. ObjectManager.cs
-
-   ```cs
-   public class ObjectManager : MonoBehaviour
-   {
-       public GameObject enemyCPrefab;
-       public GameObject enemyBPrefab;
-       public GameObject enemyAPrefab;
-
-       public GameObject itemCoinPrefab;
-       public GameObject itemPowerPrefab;
-       public GameObject itemBoomPrefab;
-
-       public GameObject bulletPlayerAPrefab;
-       public GameObject bulletPlayerBPrefab;
-       public GameObject bulletEnemyAPrefab;
-       public GameObject bulletEnemyBPrefab;
-
-       GameObject[] enemyC;
-       GameObject[] enemyB;
-       GameObject[] enemyA;
-
-       GameObject[] itemCoin;
-       GameObject[] itemPower;
-       GameObject[] itemBoom;
-
-       GameObject[] bulletPlayerA;
-       GameObject[] bulletPlayerB;
-      
-       GameObject[] bulletEnemyA;
-       GameObject[] bulletEnemyB;
-
-       void Awake()
-       {
-           enemyA = new GameObject[10];
-           enemyB = new GameObject[10];
-           enemyC = new GameObject[20];
-
-           itemCoin = new GameObject[20];
-           itemPower = new GameObject[10];
-           itemBoom = new GameObject[10];
-
-           bulletPlayerA = new GameObject[100];
-           bulletPlayerB = new GameObject[100];
-          
-           bulletEnemyA = new GameObject[100];
-           bulletEnemyB = new GameObject[100];
-          
-           Generate();
-       }
-      
-       // 수정 필요
-       void Generate(){
-      
-           // #1.Enemy
-           for(int i=0;i<enemyC.Length;i++){
-               enemyC[i] = Instantiate(enemyCPrefab);
-               enemyC[i].SetActive(false);
-           }
-           for(int i=0;i<enemyB.Length;i++){
-               enemyB[i] = Instantiate(enemyBPrefab);
-               enemyB[i].SetActive(false);
-           }
-           for(int i=0;i<enemyA.Length;i++){
-               enemyA[i] = Instantiate(enemyAPrefab);
-               enemyA[i].SetActive(false);
-           }
-
-           // #2.Item
-           for(int i=0;i<itemCoin.Length;i++){
-               itemCoin[i] = Instantiate(itemCoinPrefab);
-               itemCoin[i].SetActive(false);
-           }
-           for(int i=0;i<itemPower.Length;i++){
-               itemPower[i] = Instantiate(itemPowerPrefab);
-               itemPower[i].SetActive(false);
-           }
-           for(int i=0;i<itemBoom.Length;i++){
-               itemBoom[i] = Instantiate(itemBoomPrefab);
-               itemBoom[i].SetActive(false);
-           }
-          
-           // #3.Bullet
-           for(int i=0;i<bulletPlayerA.Length;i++){
-               bulletPlayerA[i] = Instantiate(bulletPlayerAPrefab);
-               bulletPlayerA[i].SetActive(false);
-           }
-           for(int i=0;i<bulletPlayerB.Length;i++){
-               bulletPlayerB[i] = Instantiate(bulletPlayerBPrefab);
-               bulletPlayerB[i].SetActive(false);
-           }
-
-           for(int i=0;i<bulletEnemyA.Length;i++){
-               bulletEnemyA[i] = Instantiate(bulletEnemyAPrefab);
-               bulletEnemyA[i].SetActive(false);
-           }
-           for(int i=0;i<bulletEnemyB.Length;i++){
-               bulletEnemyB[i] = Instantiate(bulletEnemyBPrefab);
-               bulletEnemyB[i].SetActive(false);
-           }
-       }
-   }
-   ```
-
-#### 풀 사용하기
-
-1. 오브젝트 풀에 접근할 수 잇는 함수 생성
-2. 모든생성은 ObjectManager를 사용하며
-3. prefab의 경우 미리등록할수없기에
-4. 생성해줄때(GameManager가) ObjectManager를 연결해준다.
-5. 삭제 대신에 비활성화로 처리한다.
-6. 재사용을 위해 회전을 정상화하고, 속도를 정상화, health를 정상화한다.
-
-#### 로직 정리
-
 1. GameManager.cs
 
    ```cs
@@ -1862,4 +1607,101 @@ public class ObjectManager : MonoBehaviour
    pools[2] = enemyC;
    ```
 
-###
+### 2D 종스크롤 슈팅 - 따라다니는 보조무기 만들기 [B36]
+
+#### 준비하기
+
+1. 하이라키에 Follwer 객체를 만들어준다. (스프라이트추가)
+   1. order in layer 9
+2. 기본 PalayerBulletA를 복사 (Follower Bullet)
+   1. Sprite는 Follower Bullet으로 변경
+   2. box collider 2d크기 수정
+      1. 0.15, 0.5
+
+#### 기본 작동 구현
+
+1. Follower.cs 1. (이하)
+   `
+
+#### 팔로우 로직
+
+1. _Queue 사용법_
+   1. enqueue와 dequeue를 사용
+2. Follower
+
+   ```cs
+   public class Follower : MonoBehaviour
+   {
+       public float maxShotDelay;
+       public float curShotDelay;
+
+       public Vector3 followPos;
+       public int followDelay;
+       public Transform parent;
+       public Queue<Vector3> parentPos;
+      
+       void Awake()
+       {
+           parentPos = new Queue<Vector3>();
+       }
+
+       void Update()
+       {
+           Watch();
+           Follow();
+           Fire();
+           Reload();
+       }
+
+       public void Watch(){
+           //Queue = FIFO (First)
+
+           // # Input Pos
+           if(!parentPos.Contains(parent.position))
+               parentPos.Enqueue(parent.position);
+
+           // # Output Pos
+           if(parentPos.Count>followDelay)
+               followPos = parentPos.Dequeue();
+           else if(parentPos.Count>followDelay){
+               followPos = parent.position;
+           }
+       }
+
+       public void Follow(){
+           transform.position = followPos;
+       }
+
+       void Fire(){
+           // if(!Input.GetButton("Fire1")) return;
+           if(curShotDelay < maxShotDelay) return;
+
+           GameObject bullet = ObjectManager.instance.MakeObj(ObjectManager.Type.BulletFollower);
+           bullet.transform.position = transform.position;
+           Rigidbody2D rigid = bullet.GetComponent<Rigidbody2D>();
+           rigid.AddForce(Vector2.up * 10f,ForceMode2D.Impulse);
+           curShotDelay = 0;
+       }
+
+       void Reload(){
+           curShotDelay += Time.deltaTime;
+       }
+   }
+   ```
+
+#### 파워 적용
+
+1. follower 넣어주기
+2. 코드상 power++ 하는쪽에 다음 메서드호출
+
+```cs
+    void AddFollower(){
+        if(power<4) return;
+        if(power>6) return;
+
+        followers[power-4].SetActive(true);
+    }
+```
+
+3. Fire 메서드 내에서
+4. Case 3: 를 default로 변경

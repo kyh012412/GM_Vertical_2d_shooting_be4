@@ -5,7 +5,8 @@ using UnityEngine;
 
 public class ObjectManager : MonoBehaviour
 {
-    public enum Type {EnemyA, EnemyB, EnemyC, ItemPower, ItemBoom, ItemCoin, BulletPlayerA, BulletPlayerB, BulletEnemyA, BulletEnemyB};
+    public static ObjectManager instance;
+    public enum Type {EnemyA, EnemyB, EnemyC, ItemPower, ItemBoom, ItemCoin, BulletPlayerA, BulletPlayerB, BulletEnemyA, BulletEnemyB,BulletFollower};
     public GameObject enemyCPrefab;
     public GameObject enemyBPrefab;
     public GameObject enemyAPrefab;
@@ -18,6 +19,7 @@ public class ObjectManager : MonoBehaviour
     public GameObject bulletPlayerBPrefab;
     public GameObject bulletEnemyAPrefab;
     public GameObject bulletEnemyBPrefab;
+    public GameObject bulletFollowerPrefab;
 
     GameObject[] enemyC;
     GameObject[] enemyB;
@@ -31,29 +33,33 @@ public class ObjectManager : MonoBehaviour
     GameObject[] bulletPlayerB;
     GameObject[] bulletEnemyA;
     GameObject[] bulletEnemyB;
+    GameObject[] bulletFollower;
     List<GameObject[]> pools;
 
     void Awake()
     {
-        //my pools definition
-        pools = new List<GameObject[]>(Enum.GetValues(typeof(Type)).Length);
-        for(int i=0;i<Enum.GetValues(typeof(Type)).Length;i++){
-            pools.Add(null);
+        if(instance==null){
+            instance=this;
+            //my pools definition
+            pools = new List<GameObject[]>(Enum.GetValues(typeof(Type)).Length);
+            for(int i=0;i<Enum.GetValues(typeof(Type)).Length;i++){
+                pools.Add(null);
+            }
+            enemyA = new GameObject[10];
+            enemyB = new GameObject[10];
+            enemyC = new GameObject[20];
+
+            itemCoin = new GameObject[20];
+            itemPower = new GameObject[10];
+            itemBoom = new GameObject[10];
+
+            bulletPlayerA = new GameObject[100];
+            bulletPlayerB = new GameObject[100];        
+            bulletEnemyA = new GameObject[100];
+            bulletEnemyB = new GameObject[100];
+            bulletFollower = new GameObject[100];
+            Generate();
         }
-        enemyA = new GameObject[10];
-        enemyB = new GameObject[10];
-        enemyC = new GameObject[20];
-
-        itemCoin = new GameObject[20];
-        itemPower = new GameObject[10];
-        itemBoom = new GameObject[10];
-
-        bulletPlayerA = new GameObject[100];
-        bulletPlayerB = new GameObject[100];
-        
-        bulletEnemyA = new GameObject[100];
-        bulletEnemyB = new GameObject[100];
-        Generate();
     }
 
     // 수정 필요
@@ -110,6 +116,10 @@ public class ObjectManager : MonoBehaviour
             bulletEnemyB[i] = Instantiate(bulletEnemyBPrefab);
             bulletEnemyB[i].SetActive(false);
         }
+        for(int i=0;i<bulletFollower.Length;i++){
+            bulletFollower[i] = Instantiate(bulletFollowerPrefab);
+            bulletFollower[i].SetActive(false);
+        }
         
         pools[0] = enemyA;
         pools[1] = enemyB;
@@ -121,6 +131,7 @@ public class ObjectManager : MonoBehaviour
         pools[7] = bulletPlayerB;
         pools[8] = bulletEnemyA;
         pools[9] = bulletEnemyB;
+        pools[10] = bulletFollower;
     }
 
     public GameObject MakeObj(Type type){
@@ -162,6 +173,8 @@ public class ObjectManager : MonoBehaviour
                 return Instantiate(bulletEnemyAPrefab);
             case Type.BulletEnemyB:
                 return Instantiate(bulletEnemyBPrefab);
+            case Type.BulletFollower:
+                return Instantiate(bulletFollowerPrefab);
             default :
                 Debug.Log("에러발생");
                 break;
