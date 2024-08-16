@@ -23,6 +23,7 @@ public class Player : MonoBehaviour
     public GameObject bulletObjA;
     public GameObject bulletObjB;
     public GameObject boomEffect;
+    public GameObject[] followers;
 
     public bool isHit;
     public bool isBoomTime;
@@ -84,7 +85,7 @@ public class Player : MonoBehaviour
             case 2:
                 FireCase2();
                 break;
-            case 3:
+            default:
                 FireCase2();   
                 GameObject bulletB = objectManager.MakeObj(ObjectManager.Type.BulletPlayerB);
                 bulletB.transform.position = transform.position;
@@ -184,6 +185,7 @@ public class Player : MonoBehaviour
                         score += 500;
                     }else{
                         power++;
+                        AddFollower();
                     }
                     break;
                 case Item.ItemType.Boom:
@@ -198,6 +200,12 @@ public class Player : MonoBehaviour
 
             other.gameObject.SetActive(false);
         }
+    }
+    void AddFollower(){
+        if(power<4) return;
+        if(power>6) return;
+
+        followers[power-4].SetActive(true);
     }
 
     //active 인것만 Deactivate하기
