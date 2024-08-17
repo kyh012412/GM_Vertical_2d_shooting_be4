@@ -1997,4 +1997,226 @@ https://www.youtube.com/watch?v=KUQAULcpYZU&list=PLO-mt5Iu5TeYtWvM9eN-xnwRbyUAMW
    }
    ```
 
+### 2D 종스크롤 슈팅 - 모바일 슈팅게임 만들기 [BE4]
+
+#### 플레이어 무적 시간
+
+1. Player.cs
+
+```cs
+    public bool isRespawnTime; // 무적 타임을 처리할 변수
+
+    void OnEnable()
+    {
+        Unbeatable();
+        Invoke("Unbeatable",3f);
+    }
+
+    void Unbeatable(){
+        isRespawnTime = !isBoomTime;
+        if(isRespawnTime){
+            spriteRenderer.color = new Color(1,1,1,0.5f);
+        }else{
+            spriteRenderer.color = new Color(1,1,1,1);
+        }
+    }
+    //...
+	     if(other.gameObject.CompareTag("EnemyBullet") || other.gameObject.CompareTag("Enemy")){
+			if(isRespawnTime) return;
+		}
+```
+
+#### 폭발 효과
+
+1. Explosion 0을 하이라키에 드랍
+   1. 애니메이션을 만들어주고
+   2. animator내로 가서 기본값을 empty state로 변경해준다.
+   3. any state > Explosion 연결
+2. Explosion.cs
+
+   ```cs
+   public class Explosion : MonoBehaviour
+   {
+       Animator anim;
+
+       void Awake()
+       {
+           anim = GetComponent<Animator>();
+       }
+
+       public void StartExplosion(string target){
+           anim.SetTrigger("OnExplosion");
+
+           switch(target){
+               case "A":
+                   transform.localScale = Vector3.one*0.7f;
+                   break;
+               case "B":
+               case "P":
+                   transform.localScale = Vector3.one*1f;
+                   break;
+               case "C":
+                   transform.localScale = Vector3.one*2f;
+                   break;
+               case "Boss":
+                   transform.localScale = Vector3.one * 3f;
+                   break;
+               default:
+                   Debug.Log("예외 발생");
+                   break;
+           }
+       }
+   }
+   ```
+
+3. Prefab화
+
+#### 모바일 컨트롤 UI(이동)
+
+1. Canvas 내에 Render Mode - Screen Space - Overlay로 되어있음
+   1. (Scene 내에서 Canvas가 Screen World보다 크게보임 )
+2. 이값을 Screen Space - Camera로 변경
+   1. Main Camera도 넣어준다.
+   2. order in layer 높은값 (다른것에 가려지지 않기 위해서)
+3. Canvas 내에 이미지 추가 (Joy Panel)
+   1. 소스 JoyPad
+   2. 가로 세로 300 300
+   3. 앵커 좌하단
+   4. pos x 25 y 25
+   5. 알파값 170
+4. Joy Panel내에 버튼추가
+
+   1. 알파값 0
+   2. 이하 텍스트 삭제
+   3. Button 컴포넌트 내에
+      1. Transition None
+      2. Navigation None
+   4. 가로세로 100 100
+   5. 이버튼을 9개까지 복사후 분산배치
+      1. 하나를 완성한후 copy component후 Paste하는쪽이 편함
+   6. 각 event trigger를 넣고
+
+      ```cs
+      public void JoyPanel(int type){
+      	for(int i=0;i<9;i++){
+      		joyControl[i] = i == type;
+      	}
+      }
+
+      public void JoyDown(){
+      	isControl = true;
+      }
+
+      public void JoyUp(){
+      	isControl = false;
+      }
+      ```
+
+#### 모바일 컨트롤 UI(발사)
+
+1. Canvas 이하에 버튼 추가 (Button A)
+   1. 이하의 텍스트 제거
+   2. 이미지 소스 후 set native size
+   3. 200, 200
+   4. 앵커 우하단
+   5. pos x -25 y 25
+   6. 알파값 170
+2. Canvas 이하에 버튼 추가 (Button B)
+   1. 이하의 텍스트 제거
+   2. 이미지 소스 후 set native size
+   3. 200, 150
+   4. 앵커 우하단
+   5. pos x -25 y 235
+   6. 알파값 170
+3. 위와 마찬가지로 function을 만들어서 event trigger를 통하여 호출
+
+#### 스테이지 관리
+
+1. Canvas 내에 Text 추가 (Stage Text)
+   1. 라벨 STAGE 0 Start
+   2. 볼드 130
+   3. 가로 700 세로 300
+   4. 하얀색
+   5. 중앙정렬, 중앙정렬
+2. Stage Text 복사 Clear Text
+   1. 라벨
+      1. STAGE 0
+         Clear!!
+3. 위 2개에 애니메이션을 줄 예정
+4. Animation 폴더내에 Animator 생성(Text)
+5. Animation도 만들어준다.(Text)
+6. Idle 상태를 디폴트로 연결
+7. Text.anim을 정의
+8. 코드
+9. Fade Black을 하이라키에 드롭
+   1. Scale x 70, y 100
+   2. order in layer를 1로 변경
+   3. 애니 메이터 추가 (Fade)
+   4. 애니메이션 추가 (Fade In, Fade Out)
+10. Fade
+    1. Idle State 추가
+    2. 파라미터 In Out
+    3. 애니메이션 제작
+    4. spriterenderer에서 alpha값만을 조정해서
+11. Player Pos 만들어주고 연결
+12. GameManager.cs
+
+```cs
+    public int stage;
+    public Animator stageAnim;
+    public Animator clearAnim;
+    public Animator fadeAnim;
+    public Transform playerPos;
+   
+    void Awake()
+    {
+        if(instance==null){
+            instance=this;
+            spawnList = new List<Spawn>();
+            StageStart();
+        }
+    }
+
+    public void StageStart(){
+        // # Stage UI Load
+        stageAnim.SetTrigger("On");
+        stageAnim.GetComponent<Text>().text = "Stage "+stage+"\nStart";
+        clearAnim.GetComponent<Text>().text = "Stage "+stage+"\nClear";
+
+        // # Enemy Spawn File Read
+        ReadSpawnFile();
+
+        // # Fade In (밝아지는 것)
+        fadeAnim.SetTrigger("In");
+    }
+
+    public void StageEnd(){
+        // # Clear UI Load
+        clearAnim.SetTrigger("On");
+
+        // # Fade Out (어두워 지는 것)
+        fadeAnim.SetTrigger("Out");
+
+        // # Player Repos
+        player.transform.position = playerPos.position;
+
+        // # Stage Increment
+        stage++;
+        if(stage > 2)
+            Invoke("GameOver",6f);
+        else
+            Invoke("StageStart",5f);
+    }
+
+    void ReadSpawnFile(){
+        // #1.변수 초기화
+		//...
+
+        // #2.리스폰 파일 읽기
+        TextAsset textFile = Resources.Load("Stage " + stage) as TextAsset; //as Text는 자료형 검증 .. 만약에 아닐시 null처리가 됨
+	}
+```
+
+#### 모바일
+
 ###

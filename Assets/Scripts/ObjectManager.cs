@@ -6,7 +6,7 @@ using UnityEngine;
 public class ObjectManager : MonoBehaviour
 {
     public static ObjectManager instance;
-    public enum Type {EnemyA, EnemyB, EnemyC, EnemyBoss, ItemPower, ItemBoom, ItemCoin, BulletPlayerA, BulletPlayerB, BulletEnemyA, BulletEnemyB,BulletBossA,BulletBossB,BulletFollower};
+    public enum Type {EnemyA, EnemyB, EnemyC, EnemyBoss, ItemPower, ItemBoom, ItemCoin, BulletPlayerA, BulletPlayerB, BulletEnemyA, BulletEnemyB,BulletBossA,BulletBossB,BulletFollower,Explosion,Player};
     public GameObject enemyCPrefab;
     public GameObject enemyBPrefab;
     public GameObject enemyAPrefab;
@@ -23,6 +23,7 @@ public class ObjectManager : MonoBehaviour
     public GameObject bulletBossAPrefab;
     public GameObject bulletBossBPrefab;
     public GameObject bulletFollowerPrefab;
+    public GameObject explosionPrefab;
 
     GameObject[] enemyC;
     GameObject[] enemyB;
@@ -39,6 +40,7 @@ public class ObjectManager : MonoBehaviour
     GameObject[] bulletBossA;
     GameObject[] bulletBossB;
     GameObject[] bulletFollower;
+    GameObject[] explosion;
     List<GameObject[]> pools;
 
     void Awake()
@@ -66,6 +68,7 @@ public class ObjectManager : MonoBehaviour
             bulletBossA = new GameObject[50];
             bulletBossB = new GameObject[1000];
             bulletFollower = new GameObject[100];
+            explosion = new GameObject[20];
             Generate();
         }
     }
@@ -141,6 +144,10 @@ public class ObjectManager : MonoBehaviour
             bulletFollower[i] = Instantiate(bulletFollowerPrefab);
             bulletFollower[i].SetActive(false);
         }
+        for(int i=0;i<explosion.Length;i++){
+            explosion[i] = Instantiate(explosionPrefab);
+            explosion[i].SetActive(false);
+        }
         
         pools[0] = enemyA;
         pools[1] = enemyB;
@@ -156,6 +163,7 @@ public class ObjectManager : MonoBehaviour
         pools[11] = bulletBossA;
         pools[12] = bulletBossB;
         pools[13] = bulletFollower;
+        pools[14] = explosion;
     }
 
     public GameObject MakeObj(Type type){

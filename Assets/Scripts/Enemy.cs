@@ -8,6 +8,7 @@ using Random = UnityEngine.Random;
 public class Enemy : MonoBehaviour
 {
     public string enemyName;
+    public ObjectManager.Type type;
     public int enemyScore;
     public float speed;
     public int health;
@@ -113,13 +114,20 @@ public class Enemy : MonoBehaviour
             else if(ran < 10){ // Boom
                 item = objectManager.MakeObj(ObjectManager.Type.ItemBoom);
             }
+
             
             gameObject.SetActive(false);
             transform.rotation = quaternion.identity;
+            GameManager.instance.CallExplosion(transform.position,type);
 
-            if(!item) return;
-            item.transform.position  = transform.position;
-            // CancelInvoke("ReturnSprite");
+            if(item) {
+                item.transform.position  = transform.position;
+            }
+
+            // # Boss Kill
+            if(type == ObjectManager.Type.EnemyBoss ){
+                GameManager.instance.StageEnd();
+            }
         }
     }
 
@@ -148,7 +156,7 @@ public class Enemy : MonoBehaviour
     {
         switch(enemyName){
             case "Boss":
-                health = 3000;
+                health = 30;
                 Invoke("Stop",2f);
                 break;
             case "C":
@@ -282,7 +290,8 @@ public class Enemy : MonoBehaviour
 
     void FireAround(){
         // # Fire Around
-        Debug.Log("부채모양으로 발사.");
+
+        Debug.Log("원 형태로 전체 공격");
         int roundNumA = 50;
         int roundNumB = 40;
         int roundNum = curPatternCount%2==0? roundNumA: roundNumB;
@@ -299,8 +308,6 @@ public class Enemy : MonoBehaviour
             Vector3 rotVec = Vector3.forward * 360 * i / roundNum +Vector3.forward*90;
             bullet.transform.Rotate(rotVec);
         }
-
-        Debug.Log("원 형태로 전체 공격");
         
         curPatternCount++;
         if(curPatternCount< maxPatternCount[patternIndex])

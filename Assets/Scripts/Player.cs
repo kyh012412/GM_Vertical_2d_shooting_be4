@@ -24,16 +24,40 @@ public class Player : MonoBehaviour
     public GameObject bulletObjB;
     public GameObject boomEffect;
     public GameObject[] followers;
+    public bool isRespawnTime; // 무적 타임을 처리할 변수
 
     public bool isHit;
     public bool isBoomTime;
 
+    public bool[] joyControl; // 어디로 눌렀는지
+    public bool isControl; // 버튼을 눌렀는지
+    int pressedJoyNum;
+    public bool isButtonA;
+    public bool isButtonB;
+
     Animator anim;
+    SpriteRenderer spriteRenderer;
     public ObjectManager objectManager;
 
     void Awake()
     {
         anim = GetComponent<Animator>();
+        spriteRenderer = GetComponent<SpriteRenderer>();
+    }
+
+    void OnEnable()
+    {
+        Unbeatable();
+        Invoke("Unbeatable",3f);
+    }
+
+    void Unbeatable(){
+        isRespawnTime = !isRespawnTime;
+        if(isRespawnTime){
+            spriteRenderer.color = new Color(1,1,1,0.5f);
+        }else{
+            spriteRenderer.color = new Color(1,1,1,1);
+        }
     }
 
     void Update()
@@ -44,9 +68,38 @@ public class Player : MonoBehaviour
         Reload();
     }
 
+    public void JoyPanel(int type){
+        for(int i=0;i<9;i++){
+            joyControl[i] = i == type;
+            if(joyControl[i]) pressedJoyNum=i;
+        }
+    }
+
+    public void JoyDown(){
+        isControl = true;
+    }
+
+    public void JoyUp(){
+        isControl = false;
+    }
+
     void Move(){
+        // # keyboard Control Value
         float h = Input.GetAxisRaw("Horizontal"); // -1,0,1
         float v = Input.GetAxisRaw("Vertical"); // -1,0,1
+
+        // # Joy Control Value
+        if(isControl){
+            if (joyControl[0]) { h = -1; v = 1 ;}
+            else if (joyControl[1]) { h = 0; v = 1 ;}
+            else if (joyControl[2]) { h = 1; v = 1 ;}
+            else if (joyControl[3]) { h = -1; v = 0 ;}
+            else if (joyControl[4]) { h = 0; v = 0 ;}
+            else if (joyControl[5]) { h = 1; v = 0 ;}
+            else if (joyControl[6]) { h = -1; v = -1 ;}
+            else if (joyControl[7]) { h = 0; v = -1 ;}
+            else if (joyControl[8]) { h = 1; v = -1 ;}
+        }
 
         if(isTouchRight && h==1){
             h=0;
@@ -72,9 +125,23 @@ public class Player : MonoBehaviour
         }
     }
 
+    public void ButtonADown(){
+        isButtonA = true;
+    }
+
+    public void ButtonAUp(){
+        isButtonA = false;
+    }
+
+    public void ButtonBDown(){
+        isButtonB = true;
+    }
+
+
+
     void Fire(){
-        // if(!Input.GetButton("Fire1")) return;
         if(curShotDelay < maxShotDelay) return;
+        if(!Input.GetButton("Fire1") && !isButtonA) return;
         switch(power){
             case 1:
                 GameObject bullet = objectManager.MakeObj(ObjectManager.Type.BulletPlayerA);
@@ -116,7 +183,7 @@ public class Player : MonoBehaviour
     }
 
     void Boom(){
-        if(!Input.GetButton("Fire2")) return;
+        if(!Input.GetButton("Fire2")&& !isButtonB) return;
         if(isBoomTime) return;
         if(boom <= 0) return;
 
@@ -141,6 +208,7 @@ public class Player : MonoBehaviour
     void OffBoomEffect(){
         boomEffect.SetActive(false);
         isBoomTime=false;
+        isButtonB=false;
     }
 
     void OnTriggerEnter2D(Collider2D other)
@@ -161,6 +229,7 @@ public class Player : MonoBehaviour
                     break;
             }
         }else if(other.gameObject.CompareTag("EnemyBullet") || other.gameObject.CompareTag("Enemy")){
+            if(isRespawnTime) return;
             if(isHit) return;
 
             isHit = true;
@@ -172,8 +241,10 @@ public class Player : MonoBehaviour
             }else{
                 GameManager.instance.RespawnPlayer();
             }
+            GameManager.instance.CallExplosion(transform.position,ObjectManager.Type.Player);
             gameObject.SetActive(false);
             if(other.gameObject.GetComponent<Enemy>()!=null && other.gameObject.GetComponent<Enemy>().enemyName != "Boss"){
+                // GameManager.instance.CallExplosion(other.transform.position,ObjectManager.Type.Player);
                 other.gameObject.SetActive(false);
             }
         }else if(other.gameObject.CompareTag("Item")){

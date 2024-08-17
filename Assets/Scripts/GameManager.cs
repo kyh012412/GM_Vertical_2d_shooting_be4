@@ -9,6 +9,13 @@ using Random = UnityEngine.Random;
 public class GameManager : MonoBehaviour
 {
     public static GameManager instance;
+
+
+    public int stage;
+    public Animator stageAnim;
+    public Animator clearAnim;
+    public Animator fadeAnim;
+    public Transform playerPos;
     public GameObject[] enemyObjs;
     public Transform[] spawnPoints;
     public float nextSpawnDelay;
@@ -31,8 +38,39 @@ public class GameManager : MonoBehaviour
         if(instance==null){
             instance=this;
             spawnList = new List<Spawn>();
-            ReadSpawnFile();
+            StageStart();
         }
+    }
+
+    public void StageStart(){
+        // # Stage UI Load
+        stageAnim.SetTrigger("On");
+        stageAnim.GetComponent<Text>().text = "Stage "+stage+"\nStart";
+        clearAnim.GetComponent<Text>().text = "Stage "+stage+"\nClear";
+
+        // # Enemy Spawn File Read
+        ReadSpawnFile();
+
+        // # Fade In (밝아지는 것)
+        fadeAnim.SetTrigger("In");
+    }
+
+    public void StageEnd(){
+        // # Clear UI Load
+        clearAnim.SetTrigger("On");
+
+        // # Fade Out (어두워 지는 것)
+        fadeAnim.SetTrigger("Out");
+
+        // # Player Repos
+        player.transform.position = playerPos.position;
+
+        // # Stage Increment
+        stage++;
+        if(stage > 2)
+            Invoke("GameOver",6f);
+        else
+            Invoke("StageStart",5f);
     }
 
     void ReadSpawnFile(){
@@ -42,11 +80,7 @@ public class GameManager : MonoBehaviour
         spawnEnd=false;
 
         // #2.리스폰 파일 읽기
-        TextAsset textFile = Resources.Load("Stage 0") as TextAsset; //as Text는 자료형 검증 .. 만약에 아닐시 null처리가 됨
-        // if(!textFile) {
-        //     Debug.Log("파일 읽기 실패");
-        //     return;
-        // }
+        TextAsset textFile = Resources.Load("Stage " + stage) as TextAsset; //as Text는 자료형 검증 .. 만약에 아닐시 null처리가 됨
         StringReader stringReader = new StringReader(textFile.text);
 
         while(stringReader != null){
@@ -163,5 +197,13 @@ public class GameManager : MonoBehaviour
 
     public void GameRetry(){
         SceneManager.LoadScene(0);
+    }
+
+    public void CallExplosion(Vector3 pos,ObjectManager.Type type){
+        GameObject explosion = objectManager.MakeObj(ObjectManager.Type.Explosion);
+        Explosion explosionLogic = explosion.GetComponent<Explosion>();
+
+        explosion.transform.position = pos;
+        explosionLogic.StartExplosion(type);
     }
 }

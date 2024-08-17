@@ -147,6 +147,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   enemyName: C
+  type: 2
   enemyScore: 10000
   speed: 1
   health: 50
@@ -161,3 +162,7 @@ MonoBehaviour:
   itemPower: {fileID: 2113357186515336786, guid: 78c093b93f736814a9b95806c1c4109f, type: 3}
   itemBoom: {fileID: 5158690621901855000, guid: 4c62da0a54d80fa43bbbf6f0a55fcf2e, type: 3}
   player: {fileID: 0}
+  objectManager: {fileID: 0}
+  patternIndex: 0
+  curPatternCount: 0
+  maxPatternCount: 
